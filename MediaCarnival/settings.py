@@ -78,14 +78,21 @@ WSGI_APPLICATION = "MediaCarnival.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "media_carnival_db",
-        "USER": "media_carnival_db_admin",
-        "PASSWORD": "media_carnival_db",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "carnival.sqlite3",
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "media_carnival_db",
+#         "USER": "media_carnival_db_admin",
+#         "PASSWORD": "media_carnival_db",
+#         "HOST": "localhost",
+#         "PORT": "5432",
+#     }
+# }
 
 
 # Password validation

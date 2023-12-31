@@ -1,0 +1,8 @@
+{
+    "files.exclude": {
+        "**/__pycache__": true,
+    },
+    "black-formatter.args": [
+        "--line-length", "120"
+    ],
+}

@@ -22,9 +22,9 @@ class FSNodeTest(TestCase):
         reset_folder()
 
         # 创建测试节点node, 保存
-        node = FSNode(absolute_path=TEST_PATH)
+        node = FSNode(path=TEST_PATH)
         node.save()
-        print("创建测试节点:", node.absolute_path)
+        print("创建测试节点:", node.path)
 
         # 初始化目录. 为目录里创建两个txt文件: txt1, txt2
         with open(os.path.join(TEST_PATH, "file1.txt"), "w") as file:
@@ -35,12 +35,12 @@ class FSNodeTest(TestCase):
         def get_child_str_set(deep=False):
             if deep == False:
                 return set(
-                    os.path.basename(child.absolute_path)
+                    os.path.basename(child.path)
                     for child in node.get_children()
                 )
             else:
                 return set(
-                    os.path.relpath(child.absolute_path, node.absolute_path)
+                    os.path.relpath(child.path, node.path)
                     for child in node.get_children(True)
                 )
 
@@ -52,7 +52,7 @@ class FSNodeTest(TestCase):
             os.mkdir(os.path.join(TEST_PATH, rela_path))
 
         def get_all_node_in_memory():
-            return set(node.absolute_path for node in FSNode.objects.all())
+            return set(node.path for node in FSNode.objects.all())
 
         ## 检查两次重复扫描结果是否相同?
         if TEST:
