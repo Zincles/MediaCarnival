@@ -21,5 +21,5 @@ from django.urls import include, path
 
 urlpatterns = [
     path(route="admin/", view=admin.site.urls),
-    path(route="file_browser/", view=include("file_browser.urls")),
+    path(route="media_library/", view=include("media_library.urls")),
 ]

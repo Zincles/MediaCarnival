@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core.apps.CoreConfig",
-    "file_browser.apps.FileBrowserConfig",
+    "media_library",
 ]
 
 MIDDLEWARE = [
@@ -56,8 +56,8 @@ ROOT_URLCONF = "MediaCarnival.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        # "DIRS": [BASE_DIR / "templates"],
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
+        #"DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

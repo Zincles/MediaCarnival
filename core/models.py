@@ -1,7 +1,8 @@
-from lib import hash
 import os
+from lib import hash
 from django.db import models
 from os.path import isdir
+from django.contrib import admin
 
 
 class MediaLibrary(models.Model):
@@ -10,14 +11,22 @@ class MediaLibrary(models.Model):
     根据MediaLibrary类型的不同,可以生成不同的MediaUnit.
     """
 
+    library_name = models.CharField(max_length=128, null=False)  # 媒体库的，显示在用户面前的名称
     root_nodes = models.ManyToManyField("FSNode")  # 媒体库的根节点们
-    library_type = models.CharField(max_length=128, null=False)  # SHOWS, FILMS, IMAGES, MUSICS, BOOKS, FILES
-    structure_type = models.CharField(max_length=128, null=False)  # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个剧集)"
+
+    # 可能的类型： SHOWS FILMS IMAGES MUSICS BOOKS FILES
+    library_type = models.CharField(max_length=128, null=False, default="SHOWS")
+
+    # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个剧集)"
+    structure_type = models.CharField(max_length=128, null=False, default="FLAT")
 
     def create_library(path, library_type="SHOWS", structure_type="FLAT"):
         """创建库."""
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
         return MediaLibrary(root_node=node, library_type=library_type, structure_type=structure_type)
+
+    def __str__(self) -> str:
+        return "[媒体库：" + self.library_name + "]"
 
 
 class MediaUnit(models.Model):
@@ -25,6 +34,7 @@ class MediaUnit(models.Model):
     媒体单位的元数据.
     一部剧, 一张保存在文件夹里的专辑, 一堆存在一个文件夹里的图片, 都可以被分别视为一个'MediaUnit'.
     MediaUnit是分类聚集的最小单位. 粒度再小一点,就是FSNode了. 用MediaUnit可以区分不同的聚集.
+    单独的剧集/文件被视为文件。
     另外,从IMDB进行刮削, MediaUnit也是最小单位.
     MediaUnit一定属于某个MediaLibrary.
     """
@@ -108,6 +118,14 @@ class FSNode(models.Model):
     meta_hash = models.CharField(max_length=512, null=True, blank=True)
     meta_last_modified_time = models.DateTimeField(null=True, blank=True)
     meta_last_created_time = models.DateTimeField(null=True, blank=True)
+
+    # 获取文件的BaseName
+    def get_path_basename(self):
+        return os.path.basename(self.path)
+
+    # 是否是目录？
+    def is_directory(self):
+        return os.path.isdir(self.path)
 
     # UNTESTED
     def get_child(self, child_name: str):

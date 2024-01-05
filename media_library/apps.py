@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class FileBrowserConfig(AppConfig):
+class MediaLibraryConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "file_browser"
+    name = "media_library"

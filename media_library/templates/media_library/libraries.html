@@ -1,0 +1,32 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
+{% comment %}总览全部媒体库。{% endcomment %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>媒体库总览</title>
+  </head>
+
+  <body>
+    {% comment %}状态栏{% endcomment %}
+
+    <div class="status-bar">
+      <h1>媒体库总览</h1>
+      <p>Media Carnival</p>
+    </div>
+
+    {% comment %}显示库。遍历拥有的每个库。{% endcomment %}
+    <div class="library-displayer">
+      {% for LIBRARY in LIBRARIES %}
+        <div class="media-display-unit" onclick="alert('{{ LIBRARY }}')">
+          <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
+          <p class="shortcut-text">LIBRARY</p>
+        </div>
+      {% endfor %}
+    </div>
+
+
+
+  </body>
+</html>

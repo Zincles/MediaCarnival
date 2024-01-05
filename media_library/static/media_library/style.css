@@ -1,0 +1,39 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+
+.file-displayer {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    /* 自动填充列 */
+    gap: 20px;
+    /* 项之间的间距 */
+}
+
+.media-display-unit {
+    text-align: center;
+    /* 居中内容 */
+    padding: 10px;
+}
+
+.shortcut-img {
+    width: 100px;
+    /* 图片宽度 */
+    height: 100px;
+    /* 图片高度 */
+    object-fit: contain;
+    /* 图片按比例缩放填充 */
+}
+
+.shortcut-text {
+    margin-top: 10px;
+    /* 文字与图片之间的间距 */
+}
+
+
+.status-bar {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+}
