@@ -14,19 +14,19 @@
     <div class="status-bar">
       <h1>媒体库总览</h1>
       <p>Media Carnival</p>
+      <a href="{% url 'media_library:home' %}">主页</a>
+      <a href="{% url 'media_library:libraries' %}">媒体库</a>
+      <a href="{% url 'media_library:file_browser' %}">文件</a>
     </div>
 
     {% comment %}显示库。遍历拥有的每个库。{% endcomment %}
     <div class="library-displayer">
       {% for LIBRARY in LIBRARIES %}
-        <div class="media-display-unit" onclick="alert('{{ LIBRARY }}')">
-          <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
-          <p class="shortcut-text">LIBRARY</p>
-        </div>
+      <a href=" {% url 'media_library:library_inspector' library_id=LIBRARY.id %} ">
+        <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
+        <p class="shortcut-text"> {{LIBRARY.library_name}} </p>
+      </a>
       {% endfor %}
     </div>
-
-
-
   </body>
 </html>

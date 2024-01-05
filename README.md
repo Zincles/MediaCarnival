@@ -3,3 +3,6 @@
 
 根据MIT协议，在此列出使用的图像资源：
 https://www.svgrepo.com/svg/486715/library
+
+CC-A
+https://www.svgrepo.com/svg/522321/tv-television

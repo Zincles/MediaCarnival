@@ -1,6 +1,6 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
-{% comment %} 查看单独的媒体库library {% endcomment %}
+{% comment %}查看单独的媒体库library{% endcomment %}
 
 <!DOCTYPE html>
 <html>
@@ -9,7 +9,25 @@
   </head>
 
   <body>
-    TODO 用于检索具体的某个媒体库。等待实现，慢慢写吧
-    {% comment %}后续部分{% endcomment %}
+    <h1>媒体库ID:{{ LIBRARY_ID}}</h1>
+    TODO 用于检索具体的某个媒体库。等待实现，慢慢写吧<br />
+
+    ID = {{ LIBRARY_ID }} <br />
+    NAME = {{ LIBRARY_NAME }}<br />
+    TYPE = {{ LIBRARY_TYPE }}<br />
+    STRUCTURE = {{ LIBRARY_STRUCTURE }}<br />
+
+
+    <!-- 显示一个媒体库对应的根目录里的所有文件夹。每个文件显示为文件夹。 下列目录可以被视为“媒体剧集” -->
+    <!-- 一个媒体库可以保存多个节目， 一个节目里有多个视频文件。 一个节目对应一个文件夹。 -->
+    <!-- 下列用于显示所有媒体文件夹。-->
+    <div class="file-displayer">
+      {% for UNIT in UNITS %}
+      <div class="media-display-unit" onclick="alert('{{ UNIT }}')">
+        <img class="shortcut-img" src="{% static 'media_library/show.svg' %}" alt="节目" />
+        <p class="shortcut-text">{{ file_path }}</p>
+      </div>
+      {% endfor %}
+    </div>
   </body>
 </html>

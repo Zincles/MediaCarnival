@@ -1,13 +1,17 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-  }
+}
 
 .file-displayer {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     /* 自动填充列 */
-    gap: 20px;
+    gap: 20px;body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    
     /* 项之间的间距 */
 }
 
@@ -16,6 +20,29 @@ body {
     /* 居中内容 */
     padding: 10px;
 }
+
+.library-displayer {
+    border: 2px solid #000;
+    /* 边框样式，2像素宽度，黑色 */
+    padding: 20px;
+    /* 内边距 */
+}
+
+/* 显示媒体库的单元. */
+.library-displayer div {
+    text-align: center;
+    border: 2px solid #000;
+    /* 边框样式，2像素宽度，黑色 */
+    padding: 20px;
+    /* 内边距 */
+}
+
+/*媒体库的标题名称。*/
+.library-shortcut-text {
+    margin-top: 20px;
+    color: aqua;
+}
+
 
 .shortcut-img {
     width: 100px;
@@ -30,6 +57,7 @@ body {
     margin-top: 10px;
     /* 文字与图片之间的间距 */
 }
+
 
 
 .status-bar {

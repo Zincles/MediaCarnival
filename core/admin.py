@@ -1,6 +1,5 @@
 from django.contrib import admin
-from core.models import FSNode
-from core.models import MediaLibrary
+from core.models import FSNode, MediaLibrary, MediaUnit
 from django.contrib import admin
 
 
@@ -47,6 +46,17 @@ class MediaLibraryAdmin(admin.ModelAdmin):
         num = len(nodes)
         return str(num)
 
+    @admin.action(description="扫描库")
+    def scan_library(modeladmin, request, queryset):
+        for i in queryset:
+            i.scan_library()
+    actions = [scan_library]
+
+
+class MediaUnitAdmin(admin.ModelAdmin):
+    list_display = ["library", "fsnode", "nickname"]
+
 
 admin.site.register(MediaLibrary, MediaLibraryAdmin)
 admin.site.register(FSNode, FSNodeAdmin)
+admin.site.register(MediaUnit, MediaUnitAdmin)

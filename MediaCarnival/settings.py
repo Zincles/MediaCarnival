@@ -141,3 +141,13 @@ NOSE_ARGS = [
     "--nocapture",
     "--nologcapture",
 ]
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATIC_ROOT =  "tmp/static_root"

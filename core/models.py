@@ -1,4 +1,5 @@
 import os
+from tkinter import FLAT
 from lib import hash
 from django.db import models
 from os.path import isdir
@@ -25,6 +26,31 @@ class MediaLibrary(models.Model):
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
         return MediaLibrary(root_node=node, library_type=library_type, structure_type=structure_type)
 
+    def scan_library(self, type="FLAT"):
+        """扫描库。方便起见直接调用FSNode的方法。"""
+        try:
+            # 首先清除现有的节点们
+            for unit in self.unit.all():
+                unit.delete()
+
+            # 然后根据预设的扫描类型进行行动
+            match type:
+                case "FLAT":  # 标注模式
+                    for root_node in self.root_nodes.all():  # 遍历根节点们
+                        pass
+                        # 获取所有文件节点(非目录)。平放到一个数组里。
+                        folder_nodes = {node for node in root_node.get_children() if node.is_directory()}
+
+                        # 为每个文件夹创建MediaUnit.
+                        for node in folder_nodes:
+                            unit = MediaUnit(library=self, fsnode=node)
+                            unit.save()
+
+                case _:
+                    raise Exception("指定了错误的媒体库扫描类型！")
+        except Exception as e:
+            print("扫描库中遇到错误：", e)
+
     def __str__(self) -> str:
         return "[媒体库：" + self.library_name + "]"
 
@@ -39,14 +65,20 @@ class MediaUnit(models.Model):
     MediaUnit一定属于某个MediaLibrary.
     """
 
-    # 每个媒体一定会属于一个库. 如果库没了,媒体Unit也会一起被删除.
-    library = models.ForeignKey(MediaLibrary, on_delete=models.CASCADE, null=False, related_name="unit")
-    path = models.CharField(max_length=512)  # 绝对路径
+    # 每个媒体也一定依附于一个MediaLibrary和FSNode. 一个 FSNode与一个Library共同确定了一个媒体。
+    # 例如，一部动漫的所有内容一定都在同一目录（或者在目录的子目录里，反正能在一个路径下递归搜索到所有）
+    # 如果文件夹没了，动漫当然也不复存在；媒体库没了，情况也一样。
+    library = models.ForeignKey(to="MediaLibrary", on_delete=models.CASCADE, null=False, related_name="unit")
+    fsnode = models.ForeignKey(to="FSNode", on_delete=models.CASCADE, null=False)
+
     nickname = models.CharField(max_length=512)  # 自定义别名. 由用户手动指定
 
     def get_basename(self):
         "获取文件夹名称."
         return os.path.basename(self.path)
+
+    def __str__(self) -> str:
+        return "[MediaUnit: " + self.fsnode.path + "]"
 
 
 # class TMDBMetadata(models.Model):
@@ -110,7 +142,7 @@ class FSNode(models.Model):
 
     HASH_METHOD = "md5"  # "sha256"
 
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="child")  # 父节点
+    parent = models.ForeignKey(to="self", on_delete=models.CASCADE, null=True, blank=True, related_name="child")  # 父节点
     path = models.CharField(max_length=512)  # 所指向的绝对路径
 
     # 文件元数据. 非实时, 需手动更新.
@@ -127,6 +159,9 @@ class FSNode(models.Model):
     def is_directory(self):
         return os.path.isdir(self.path)
 
+    def is_file(self):
+        return os.path.isfile(self.path)
+
     # UNTESTED
     def get_child(self, child_name: str):
         """根据名称获取单层子节点"""
@@ -135,7 +170,7 @@ class FSNode(models.Model):
                 return child
         raise Exception("core::FSNode::get_child(): 错误!未能找到Child! 输入文件名为: " + child_name)
 
-    def get_children(self, deep=False) -> set[str]:
+    def get_children(self, deep=False):
         if deep == False:
             return set(self.child.all())
         else:
