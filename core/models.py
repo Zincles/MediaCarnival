@@ -1,8 +1,7 @@
 import os
-from tkinter import FLAT
+from os.path import isdir
 from lib import hash
 from django.db import models
-from os.path import isdir
 from django.contrib import admin
 
 
@@ -54,6 +53,7 @@ class MediaLibrary(models.Model):
     def __str__(self) -> str:
         return "[媒体库：" + self.library_name + "]"
 
+    
 
 class MediaUnit(models.Model):
     """
