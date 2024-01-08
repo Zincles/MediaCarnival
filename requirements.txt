@@ -1,3 +1,6 @@
 requests
 django
 psycopg
+opencv-python
+matplotlib
+Pillow
