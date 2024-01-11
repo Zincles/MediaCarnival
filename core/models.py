@@ -1,8 +1,24 @@
 import os
+from requests import Response
 from os.path import isdir
 from lib import hash
 from django.db import models
 from django.contrib import admin
+from django.db.models import (
+    CharField,
+    BooleanField,
+    ManyToManyField,
+    FloatField,
+    JSONField,
+    TimeField,
+    IntegerField,
+    ForeignKey,
+)
+from django.utils import timezone
+from datetime import datetime
+
+
+import lib.tmdb as tmdb_api
 
 
 class MediaLibrary(models.Model):
@@ -53,7 +69,6 @@ class MediaLibrary(models.Model):
     def __str__(self) -> str:
         return "[媒体库：" + self.library_name + "]"
 
-    
 
 class MediaUnit(models.Model):
     """
@@ -81,56 +96,86 @@ class MediaUnit(models.Model):
         return "[MediaUnit: " + self.fsnode.path + "]"
 
 
-# class TMDBMetadata(models.Model):
-#     """
-#     从TMDB获取的元数据.
-#     """
+class TmdbTvSeriesDetails(models.Model):
+    """TMDB 剧集系列元数据信息"""
 
-#     tmdb_id = models.CharField()  # TheMovieDB上的id
-#     is_locked = models.BooleanField()  # 是否锁定该元数据
+    series_id = IntegerField(null=False)  # 剧集ID, 必须有数值
 
-#     localized_title = models.CharField()  # 剧集的本地化名称
-#     original_title = models.CharField()  # 剧集的原本名称
+    updated_time = TimeField()  # 本地的数据的更新时间
+    metadata = JSONField()  # 元数据字典
 
-#     date_added = models.DateField()
-#     status = models.CharField()
-#     community_rating = models.CharField()
-#     overview = models.CharField()
-#     release_date = models.DateField()
-#     year = models.CharField()  # 发行年份
-#     end_date = models.CharField()  # 截至年份
+    ## 仅尝试更新Series本身的元数据。不会对子资源进行操作。
+    def update(self, AUTH):
+        try:
+            response = tmdb_api.request_tv_series_detail(AUTH, self.series_id)
 
-#     genres = models.ManyToManyField(to="GenresMetadata", related_name="tmdbmetadata")  # 流派
-#     actors = models.ManyToManyField(to="ActorMetadata", related_name="tmdbmetadata")  # 演员
-#     studio = models.ManyToManyField(to="StudioMetadata", related_name="tmdbmetadata")  # 工作室
-#     keywords = models.ManyToManyField(to="KeywordMetadata", related_name="tmdbmetadata")  # 标签
-#     metadata_download_language = models.CharField()  # 下载元数据偏好的语言
-#     country = models.CharField()  # 国家
+            # 如果遭遇错误，则抛出错误并结束; 如果正常，则将获得字典存入。
+            if response.status_code != 200:
+                raise Exception("tmdb_api.request_tv_series_detail()::返回结果不为200!")
+            else:
+                self.updated_time = timezone.now().time()  # 更新时间
+                self.metadata = response  # 写入字典
+                self.save()  # 保存
 
+        except Exception as e:
+            print("更新系列元数据遇到异常", e)
 
-# class GenresMetadata(models.Model):
-#     """流派元数据"""
-#     title = models.CharField()
-
-
-# class ActorMetadata(models.Model):
-#     """演员元数据"""
-
-#     name = models.CharField()
-#     icon = models.ImageField()
+    ##  TODO 深度更新。指定深度，更新哪些内容？
+    ## create_meta 代表是否为库内没有节点的剧集创建节点？ update_seasons/episodes代表是否更新相关的剧集/节目，
+    ## tolerate_time_s 代表容忍时间，假设元数据足够新（据现在时间小于Tolerate,则不更新直接跳过。当然，不会跳过它的子节点）
+    def deep_update(create_meta=True, update_seasons=True, update_episodes=True, tolerate_time_s=0):
+        pass
 
 
-# class KeywordMetadata(models.Model):
-#     """标签元数据"""
+class TmdbTvSeasonDetails(models.Model):
+    """TMDB剧集的 Season 信息"""
 
-#     title = models.CharField()
+    series_id = IntegerField(null=False)
+    season_number = IntegerField(null=False)
+
+    updated_time = TimeField()  # 本地的数据的更新时间
+    metadata = JSONField()
+
+    def update(self, AUTH):
+        """尝试更新Season的元数据。与Series基本一致"""
+        try:
+            response = tmdb_api.request_tv_season_detail(AUTH, self.series_id, self.season_number)
+
+            if response.status_code != 200:
+                raise Exception("tmdb_api.request_tv_season_detail()::返回结果不为200!")
+            else:
+                self.updated_time = timezone.now().time()
+                self.metadata = response
+                self.save()
+
+        except Exception as e:
+            print("更新Season元数据遇到异常", e)
 
 
-# class StudioMetadata(models.Model):
-#     """工作室元数据"""
+class TmdbTvEpisodeDetails(models.Model):
+    """TMDB具体Episode的信息"""
 
-#     name = models.CharField()
-#     icon = models.ImageField()
+    series_id = IntegerField(null=False)
+    season_number = IntegerField(null=False)
+    episode_number = IntegerField(null=False)
+
+    updated_time = TimeField()  # 本地的数据的更新时间
+    metadata = JSONField()
+
+    def update(self, AUTH):
+        """尝试更新Episode的元数据。与Series基本一致"""
+        try:
+            response = tmdb_api.request_tv_episode_detail(AUTH, self.series_id, self.season_number, self.episode_number)
+
+            if response.status_code != 200:
+                raise Exception("tmdb_api.request_tv_episode_detail()::返回结果不为200!")
+            else:
+                self.updated_time = timezone.now().time()
+                self.metadata = response
+                self.save()
+
+        except Exception as e:
+            print("更新Episode元数据遇到异常", e)
 
 
 # 文件系统的节点树.
