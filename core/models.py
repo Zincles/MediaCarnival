@@ -20,6 +20,8 @@ from datetime import datetime, timedelta
 
 import lib.tmdb as tmdb_api
 
+## TODO 时区的管理仍然很混乱。需要完善。
+
 
 class MediaLibrary(models.Model):
     """
@@ -104,6 +106,13 @@ class TmdbTvSeriesDetails(models.Model):
     updated_time = DateTimeField(null=False)  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
 
+    ## 获取更新时间距今的时间差。
+    def get_update_timedelta(self):
+        updated_time: datetime = self.updated_time
+        current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
+        td: timedelta = current_time - updated_time
+        return td
+
     ## 仅尝试更新Series本身的元数据。不会对子资源进行操作。
     def update(self, AUTH, tolerate_time=0):
         try:
@@ -111,7 +120,7 @@ class TmdbTvSeriesDetails(models.Model):
             updated_time: datetime = self.updated_time
             current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
             td: timedelta = current_time - updated_time
-            if td.total_seconds() < tolerate_time:  # 如果时间差在容忍范围内
+            if tolerate_time > 0 and td.total_seconds() < tolerate_time:  # 如果有设置容忍时间且时间差在容忍范围内
                 print("在容忍范围内，无需更新!")
                 return
 
@@ -132,39 +141,80 @@ class TmdbTvSeriesDetails(models.Model):
     ## create_meta 代表是否为库内没有节点的剧集创建节点？ update_seasons/episodes代表是否更新相关的剧集/节目，
     ## tolerate_time_s 代表容忍时间，假设元数据足够新（据现在时间小于Tolerate,则不更新直接跳过。当然，不会跳过它的子节点）
     def deep_update(self, AUTH, create_meta=True, update_seasons=True, update_episodes=True, tolerate_time=0):
-        if create_meta == True:
-            print("允许创建元数据节点")
+        try:
+            updated_time: datetime = self.updated_time
+            current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
 
-        # 更新自己
-        self.update(self, AUTH, tolerate_time)
+            if create_meta == True:
+                print("允许创建元数据节点")
 
-        # 获得已存在的Season节点。
-        existed_season_metas = set(
-            TmdbTvSeasonDetails.objects.filter(series_id=self.series_id, season_number=season_num)
-        )
-        existed_season_meta_nums: set[int] = {i.season_number for i in existed_season_metas}  # 已有的剧集的ID
+            # 更新自己
+            self.update(AUTH, tolerate_time)
 
-        # 更新已有的Season节点
-        for season_meta in existed_season_metas:
-            season_meta.update(AUTH, tolerate_time)
+            # 获得已存在的Season节点。
+            existed_season_metas = set(TmdbTvSeasonDetails.objects.filter(series_id=self.series_id))
+            existed_season_meta_nums: set[int] = {i.season_number for i in existed_season_metas}  # 已有的剧集的ID
 
-        # 更新没有有的Season节点。(会创建节点)
-        if create_meta:
-            for season_dict in self.metadata["seasons"]:
-                season_num = int(season_dict["season_number"])  # 每个剧集的剧集ID
+            print("Existed Metas: ", existed_season_metas)
 
-                if not season_num in existed_season_meta_nums:  # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
-                    season_meta = TmdbTvSeasonDetails(series_id=self.series_id, season_number=season_num)
-                    season_meta.save()
-                    season_meta.update(AUTH, tolerate_time)
-                    print("创建了Season元数据节点并进行初始化更新了")
+            # 更新已有的Season节点
+            for season_meta in existed_season_metas:
+                print("\t尝试更新已有的Season节点...")
+                season_meta.update(AUTH, tolerate_time)
 
-            # for season_dict in season_dicts:  # 遍历SeasonDict。每个dict对应一个剧集
-            #
+            # 更新没有有的Season节点。(会创建节点)
+            if create_meta:
+                for season_dict in self.metadata["seasons"]:
+                    season_num = int(season_dict["season_number"])  # 每个剧集的剧集ID
 
-            # 开始进行数据的更新. 如果create_meta=True,则先创建节点
+                    if not season_num in existed_season_meta_nums:  # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
+                        season_meta = TmdbTvSeasonDetails(
+                            series_id=self.series_id, season_number=season_num, updated_time=current_time
+                        )
+                        season_meta.save()
+                        season_meta.update(AUTH, tolerate_time=0)
+                        print("创建了Season元数据节点并进行初始化更新了")
 
-        pass
+            # 更新节目 Episode相关的数据. 找到所有季 Season， 然后遍历
+            print("寻找所有已有季, 以开始遍历Episode")
+            existed_season_metalist = set(TmdbTvSeasonDetails.objects.filter(series_id=self.series_id))
+
+            for season_meta in existed_season_metalist:
+                season_num = season_meta.season_number
+                print(f"正在遍历第 {season_num} 季")
+
+                # 找到这个季里的所有已存在Episode (节目=当前节目， 季号=当前季)
+                existed_episodes = set(
+                    TmdbTvEpisodeDetails.objects.filter(series_id=self.series_id, season_number=season_num)
+                )
+                existed_episode_meta_nums: set[int] = {i.episode_number for i in existed_episodes}  # 已有的节目的ID
+
+                print(f"找到了已有Episodes:{existed_episodes}")
+
+                # 遍历每个已存在Episode, 并进行更新
+                for episode in existed_episodes:
+                    episode.update(AUTH, tolerate_time)
+
+                # 对于不存在节点的，根据参数选择是否创建节点并更新
+                if create_meta:
+                    for episode_dict in season_meta.metadata["episodes"]:
+                        season_num = int(episode_dict["season_number"])  # 每个剧集的剧集ID
+                        episode_num = int(episode_dict["episode_number"])
+
+                        if not episode_num in existed_episode_meta_nums:  # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
+                            episode_meta = TmdbTvEpisodeDetails(
+                                series_id=self.series_id,
+                                season_number=season_num,
+                                episode_number=episode_num,
+                                updated_time=current_time,
+                            )
+                            episode_meta.save()
+                            episode_meta.update(AUTH, tolerate_time=0)
+                            print("\t\t创建了Episode元数据节点并进行初始化更新了")
+
+        except Exception as e:
+            print("deep_update遇到错误:", e)
+            pass
 
 
 class TmdbTvSeasonDetails(models.Model):
@@ -176,13 +226,20 @@ class TmdbTvSeasonDetails(models.Model):
     updated_time = DateTimeField()  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
 
+    ## 获取更新时间距今的时间差。
+    def get_update_timedelta(self):
+        updated_time: datetime = self.updated_time
+        current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
+        td: timedelta = current_time - updated_time
+        return td
+
     def update(self, AUTH, tolerate_time=0):
         """尝试更新Season的元数据。与Series基本一致"""
         try:
             updated_time: datetime = self.updated_time
             current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
             td: timedelta = current_time - updated_time
-            if td.total_seconds() < tolerate_time:  # 如果时间差在容忍范围内
+            if tolerate_time > 0 and td.total_seconds() < tolerate_time:  # 如果有设置容忍时间且时间差在容忍范围内
                 print("在容忍范围内，无需更新!")
                 return
 
@@ -209,13 +266,20 @@ class TmdbTvEpisodeDetails(models.Model):
     updated_time = DateTimeField()  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
 
+    ## 获取更新时间距今的时间差。
+    def get_update_timedelta(self):
+        updated_time: datetime = self.updated_time
+        current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
+        td: timedelta = current_time - updated_time
+        return td
+
     def update(self, AUTH, tolerate_time=0):
         """尝试更新Episode的元数据。与Series基本一致"""
         try:
             updated_time: datetime = self.updated_time
             current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
             td: timedelta = current_time - updated_time
-            if td.total_seconds() < tolerate_time:  # 如果时间差在容忍范围内
+            if tolerate_time > 0 and td.total_seconds() < tolerate_time:  # 如果有设置容忍时间且时间差在容忍范围内
                 print("在容忍范围内，无需更新!")
                 return
 

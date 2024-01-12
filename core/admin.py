@@ -65,32 +65,70 @@ class MediaUnitAdmin(admin.ModelAdmin):
     list_display = ["library", "fsnode", "nickname"]
 
 
+# TMDB Series
 class TmdbTvSeriesDetailsAdmin(admin.ModelAdmin):
-    @admin.action(description="单独更新节点的元数据")
+    @admin.action(description="单独更新节点的元数据（300s）")
     def update(modeladmin, request, queryset):
         for i in queryset:
-            i.update(ACCESS_TOKEN, 30)
+            i.update(ACCESS_TOKEN, 300)
 
-    @admin.display(description="更新距今时间")
-    def _get_time_delta(self, meta):
-        
-        updated_time = meta.updated_time
-        current_time = datetime.now().astimezone(updated_time.tzinfo)
+    @admin.action(description="深度更新节点的元数据（300s）")
+    def deep_update(modeladmin, request, queryset):
+        for i in queryset:
+            i.deep_update(AUTH=ACCESS_TOKEN, tolerate_time=300)
 
-        # td:timedelta = datetime.now().replace(tzinfo=None) - updated_time.replace(tzinfo=None)
-        return (current_time - updated_time).seconds
+    @admin.display(description="获取Metadata的预览")
+    def _get_meta_preview(self, meta):
+        r = str(meta.metadata)
+        result = r[:30] + "   ......   " + r[-30:]
+        return result
+
+    actions = ["update", "deep_update"]
+
+    list_display = ["series_id", "updated_time", "_get_meta_preview", "get_update_timedelta"]
+    truncatewords = 10
+    # truncatechars:10
+
+
+# TMDB Season
+class TmdbTvSeasonDetailsAdmin(admin.ModelAdmin):
+    @admin.action(description="单独更新节点的元数据（300s）")
+    def update(modeladmin, request, queryset):
+        for i in queryset:
+            i.update(ACCESS_TOKEN, 300)
+
+    @admin.display(description="获取Metadata的预览")
+    def _get_meta_preview(self, meta):
+        r = str(meta.metadata)
+        result = r[:30] + "   ......   " + r[-30:]
+        return result
 
     actions = ["update"]
-
-    list_display = ["series_id", "updated_time", "metadata", "_get_time_delta"]
-
-
-class TmdbTvSeasonDetailsAdmin(admin.ModelAdmin):
-    list_display = ["series_id", "season_number", "updated_time", "metadata"]
+    list_display = ["series_id", "season_number", "updated_time", "_get_meta_preview", "get_update_timedelta"]
 
 
+# TMDB Episode
 class TmdbTvEpisodeDetailsAdmin(admin.ModelAdmin):
-    list_display = ["series_id", "season_number", "episode_number", "updated_time", "metadata"]
+    @admin.action(description="单独更新节点的元数据（300s）")
+    def update(modeladmin, request, queryset):
+        for i in queryset:
+            i.update(ACCESS_TOKEN, 300)
+
+    @admin.display(description="获取Metadata的预览")
+    def _get_meta_preview(self, meta):
+        r = str(meta.metadata)
+        result = r[:30] + "   ......   " + r[-30:]
+        return result
+
+    actions = ["update"]
+    list_display = [
+        "series_id",
+        "season_number",
+        "episode_number",
+        "updated_time",
+        "_get_meta_preview",
+        "get_update_timedelta",
+    ]
 
 
 admin.site.register(MediaLibrary, MediaLibraryAdmin)
