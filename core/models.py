@@ -15,7 +15,7 @@ from django.db.models import (
     ForeignKey,
 )
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 import lib.tmdb as tmdb_api
@@ -105,8 +105,15 @@ class TmdbTvSeriesDetails(models.Model):
     metadata = JSONField()  # 元数据字典
 
     ## 仅尝试更新Series本身的元数据。不会对子资源进行操作。
-    def update(self, AUTH):
+    def update(self, AUTH, tolerate_time=0):
         try:
+            # updated_time不为空 说明先前更新过一次。会判断是否在容忍范围内。如果在，则忽略本次更新。
+            if self.updated_time is None:
+                td: timedelta = datetime.now() - self.updated_time
+                if td.total_seconds() < tolerate_time:  # 如果时间差在容忍范围内
+                    print("在容忍范围内，无需更新")
+                    return
+
             response = tmdb_api.request_tv_series_detail(AUTH, self.series_id)
 
             # 如果遭遇错误，则抛出错误并结束; 如果正常，则将获得字典存入。
@@ -114,7 +121,7 @@ class TmdbTvSeriesDetails(models.Model):
                 raise Exception("tmdb_api.request_tv_series_detail()::返回结果不为200!")
             else:
                 self.updated_time = timezone.now().time()  # 更新时间
-                self.metadata = response  # 写入字典
+                self.metadata = response.json()  # 写入字典
                 self.save()  # 保存
 
         except Exception as e:
@@ -123,7 +130,7 @@ class TmdbTvSeriesDetails(models.Model):
     ##  TODO 深度更新。指定深度，更新哪些内容？
     ## create_meta 代表是否为库内没有节点的剧集创建节点？ update_seasons/episodes代表是否更新相关的剧集/节目，
     ## tolerate_time_s 代表容忍时间，假设元数据足够新（据现在时间小于Tolerate,则不更新直接跳过。当然，不会跳过它的子节点）
-    def deep_update(create_meta=True, update_seasons=True, update_episodes=True, tolerate_time_s=0):
+    def deep_update(self, create_meta=True, update_seasons=True, update_episodes=True, tolerate_time=0):
         pass
 
 
@@ -133,19 +140,25 @@ class TmdbTvSeasonDetails(models.Model):
     series_id = IntegerField(null=False)
     season_number = IntegerField(null=False)
 
-    updated_time = TimeField()  # 本地的数据的更新时间
+    updated_time: TimeField = TimeField()  # 本地的数据的更新时间
     metadata = JSONField()
 
-    def update(self, AUTH):
+    def update(self, AUTH, tolerate_time=0):
         """尝试更新Season的元数据。与Series基本一致"""
         try:
+            if self.updated_time is None:
+                td: timedelta = datetime.now() - self.updated_time
+                if td.total_seconds() < tolerate_time:
+                    print("在容忍范围内，无需更新")
+                    return
+
             response = tmdb_api.request_tv_season_detail(AUTH, self.series_id, self.season_number)
 
             if response.status_code != 200:
                 raise Exception("tmdb_api.request_tv_season_detail()::返回结果不为200!")
             else:
                 self.updated_time = timezone.now().time()
-                self.metadata = response
+                self.metadata = response.json()
                 self.save()
 
         except Exception as e:
@@ -162,16 +175,22 @@ class TmdbTvEpisodeDetails(models.Model):
     updated_time = TimeField()  # 本地的数据的更新时间
     metadata = JSONField()
 
-    def update(self, AUTH):
+    def update(self, AUTH, tolerate_time=0):
         """尝试更新Episode的元数据。与Series基本一致"""
         try:
+            if self.updated_time is None:
+                td: timedelta = datetime.now() - self.updated_time
+                if td.total_seconds() < tolerate_time:
+                    print("在容忍范围内，无需更新")
+                    return
+
             response = tmdb_api.request_tv_episode_detail(AUTH, self.series_id, self.season_number, self.episode_number)
 
             if response.status_code != 200:
                 raise Exception("tmdb_api.request_tv_episode_detail()::返回结果不为200!")
             else:
                 self.updated_time = timezone.now().time()
-                self.metadata = response
+                self.metadata = response.json()
                 self.save()
 
         except Exception as e:
