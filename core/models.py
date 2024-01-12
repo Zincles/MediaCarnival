@@ -1,3 +1,4 @@
+#   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
 import os
 from requests import Response
 from os.path import isdir
@@ -16,7 +17,6 @@ from django.db.models import (
 )
 from django.utils import timezone
 from datetime import datetime, timedelta
-
 
 import lib.tmdb as tmdb_api
 
@@ -90,12 +90,23 @@ class MediaUnit(models.Model):
 
     nickname = models.CharField(max_length=512)  # 自定义别名. 由用户手动指定
 
+    # TV剧集元数据。
+    metadata_tmdb_tv = ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit")
+    metadata_tmdb_movie = ManyToManyField(to="TmdbMovieDetails", related_name="media_unit")
+
     def get_basename(self):
         "获取文件夹名称."
         return os.path.basename(self.path)
 
     def __str__(self) -> str:
         return "[MediaUnit: " + self.fsnode.path + "]"
+
+
+# ============================== #
+#                                #
+#         TMDB 的元数据           #
+#                                #
+# ============================== #
 
 
 class TmdbTvSeriesDetails(models.Model):
@@ -137,7 +148,7 @@ class TmdbTvSeriesDetails(models.Model):
         except Exception as e:
             print("更新系列元数据遇到异常", e)
 
-    ##  TODO 深度更新。指定深度，更新哪些内容？
+    ## 深度更新。
     ## create_meta 代表是否为库内没有节点的剧集创建节点？ update_seasons/episodes代表是否更新相关的剧集/节目，
     ## tolerate_time_s 代表容忍时间，假设元数据足够新（据现在时间小于Tolerate,则不更新直接跳过。当然，不会跳过它的子节点）
     def deep_update(self, AUTH, create_meta=True, update_seasons=True, update_episodes=True, tolerate_time=0):
@@ -215,6 +226,23 @@ class TmdbTvSeriesDetails(models.Model):
         except Exception as e:
             print("deep_update遇到错误:", e)
             pass
+
+    def get_name(self):
+        """获取该节目的名称（本地名称）"""
+        try:
+            name = self.metadata["name"]
+            return name
+        except Exception as e:
+            print(f"错误： {e}")
+            return f"ERROR!{e}"
+
+    def __str__(self) -> str:
+        try:
+            name: str = self.metadata["name"] if not self.metadata is None else "N/A"
+            return f"[TMDB Series: ID={self.series_id} NAME={name}]"
+        except Exception as e:
+            print(f"错误：{e}")
+            return f"[TMDB Series ERROR! 获取名称失败,{e}]"
 
 
 class TmdbTvSeasonDetails(models.Model):
@@ -294,6 +322,44 @@ class TmdbTvEpisodeDetails(models.Model):
 
         except Exception as e:
             print("更新Episode元数据遇到异常", e)
+
+
+class TmdbMovieDetails(models.Model):
+    """电影的元数据"""
+
+    movie_id = IntegerField(null=False)
+    updated_time = DateTimeField(null=False)
+    metadata = JSONField(null=True, blank=True)
+
+    ## 更新元数据。与TV Series的方法相同
+    def update(self, AUTH, tolerate_time=0):
+        try:
+            updated_time: datetime = self.updated_time
+            current_time: datetime = datetime.now().astimezone(updated_time.tzinfo)
+            td: timedelta = current_time - updated_time
+            if tolerate_time > 0 and td.total_seconds() < tolerate_time:  # 如果有设置容忍时间且时间差在容忍范围内
+                print("在容忍范围内，无需更新!")
+                return
+
+            response = tmdb_api.request_movie_detail(AUTH, self.movie_id)
+
+            # 如果遭遇错误，则抛出错误并结束; 如果正常，则将获得字典存入。
+            if response.status_code != 200:
+                raise Exception("tmdb_api.request_movie_detail()::返回结果不为200!")
+            else:
+                self.updated_time = current_time  # 更新时间
+                self.metadata = response.json()  # 写入字典
+                self.save()  # 保存
+
+        except Exception as e:
+            print("更新系列元数据遇到异常", e)
+
+
+# =================================== #
+#                                     #
+#            文件系统的中间层            #
+#                                     #
+# =================================== #
 
 
 # 文件系统的节点树.

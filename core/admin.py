@@ -1,6 +1,6 @@
 from django.contrib import admin
 from core.models import FSNode, MediaLibrary, MediaUnit
-from core.models import TmdbTvSeriesDetails, TmdbTvSeasonDetails, TmdbTvEpisodeDetails
+from core.models import TmdbTvSeriesDetails, TmdbTvSeasonDetails, TmdbTvEpisodeDetails, TmdbMovieDetails
 from django.contrib import admin
 
 from django.utils import timezone
@@ -63,6 +63,7 @@ class MediaLibraryAdmin(admin.ModelAdmin):
 # 媒体单元
 class MediaUnitAdmin(admin.ModelAdmin):
     list_display = ["library", "fsnode", "nickname"]
+    filter_horizontal = ("metadata_tmdb_tv", "metadata_tmdb_movie")
 
 
 # TMDB Series
@@ -77,15 +78,9 @@ class TmdbTvSeriesDetailsAdmin(admin.ModelAdmin):
         for i in queryset:
             i.deep_update(AUTH=ACCESS_TOKEN, tolerate_time=300)
 
-    @admin.display(description="获取Metadata的预览")
-    def _get_meta_preview(self, meta):
-        r = str(meta.metadata)
-        result = r[:30] + "   ......   " + r[-30:]
-        return result
-
     actions = ["update", "deep_update"]
 
-    list_display = ["series_id", "updated_time", "_get_meta_preview", "get_update_timedelta"]
+    list_display = ["series_id", "updated_time", "get_name", "get_update_timedelta"]
     truncatewords = 10
     # truncatechars:10
 
@@ -131,6 +126,16 @@ class TmdbTvEpisodeDetailsAdmin(admin.ModelAdmin):
     ]
 
 
+class TmdbMovieDetailsAdmin(admin.ModelAdmin):
+    @admin.display(description="获取Metadata的预览")
+    def _get_meta_preview(self, meta):
+        r = str(meta.metadata)
+        result = r[:30] + "   ......   " + r[-30:]
+        return result
+
+    list_display = ["movie_id", "_get_meta_preview"]
+
+
 admin.site.register(MediaLibrary, MediaLibraryAdmin)
 admin.site.register(FSNode, FSNodeAdmin)
 admin.site.register(MediaUnit, MediaUnitAdmin)
@@ -138,3 +143,4 @@ admin.site.register(MediaUnit, MediaUnitAdmin)
 admin.site.register(TmdbTvSeriesDetails, TmdbTvSeriesDetailsAdmin)
 admin.site.register(TmdbTvSeasonDetails, TmdbTvSeasonDetailsAdmin)
 admin.site.register(TmdbTvEpisodeDetails, TmdbTvEpisodeDetailsAdmin)
+admin.site.register(TmdbMovieDetails, TmdbMovieDetailsAdmin)
