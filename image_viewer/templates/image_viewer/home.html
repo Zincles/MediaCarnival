@@ -12,8 +12,8 @@
 
     {% include "components/panel/status_panel.html" with TITLE="图像浏览器" PARA="目前没有文件" %}
 
-
-
+    {% comment %} <img src="{% url "core:image" "static/file.svg" %}"/> {% endcomment %}
+    <img src="{% url "core:file" "/home/zincles/Projects/MediaCarnival/static/file.svg" %}"/>
     
     {% comment %}后续部分{% endcomment %}
   </body>
