@@ -24,5 +24,6 @@ urlpatterns = [
     path(route="core/", view=include("core.urls")),
     path(route="media_library/", view=include("media_library.urls")),
     path(route="image_viewer/", view=include("image_viewer.urls")),
+    path(route="file_browser/", view=include("file_browser.urls")),
     
 ]

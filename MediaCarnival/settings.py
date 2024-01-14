@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "media_library",
     "image_viewer",
+    "file_browser",
 ]
 
 MIDDLEWARE = [
