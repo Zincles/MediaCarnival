@@ -8,3 +8,7 @@
 开发过程中使用了部分图像资源，它们将在正式版本内被替换。以下是来源： <br>
 https://www.svgrepo.com/svg/486715/library MIT<br>
 https://www.svgrepo.com/svg/522321/tv-television  CC-A<br>
+<br>
+<br>
+
+TODO 完善鉴权相关内容: core/views.py/file()
