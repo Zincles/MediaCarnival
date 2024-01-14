@@ -1,6 +1,11 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
-{% comment %}总览全部媒体库。{% endcomment %}
+<!--  
+  总览所有的Library.
+
+  接受来自Python文件的输入： 
+  - LIBRARIES
+
+-->
 
 <!DOCTYPE html>
 <html>
@@ -9,28 +14,24 @@
   </head>
 
   <body>
-    {% comment %}状态栏{% endcomment %}
+    <!-- 状态栏 -->
+    {% include "components/panel/status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
 
-    <div class="status-bar">
-      <h1>媒体库总览</h1>
-      <p>Media Carnival</p>
-      <a href="{% url 'media_library:home' %}">主页</a>
-      <a href="{% url 'media_library:libraries' %}">媒体库</a>
-      <a href="{% url 'media_library:file_browser' %}">文件</a>
+    <!-- 媒体库显示器，显示来自Python的输入 -->
+    <div>
+      {% for LIBRARY in LIBRARIES %} {% comment %}
+      <a href=" {% url ' library_id=LIBRARY.id %} ">
+        <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
+        <p class="shortcut-text">{{LIBRARY.library_name}}</p>
+      </a>
+      {% endcomment %}
+      <!-- -->
+      {% include "components/image_displayer/landscape_displayer.html" %}
+      
+      <!-- -->
+      {% endfor %}
     </div>
 
-    {% {% include with = %} %}
-
-    
-
-    {% comment %} 显示库。遍历拥有的每个库。
-    <div class="library-displayer">
-      {% for LIBRARY in LIBRARIES %}
-      <a href=" {% url 'media_library:library_inspector' library_id=LIBRARY.id %} ">
-        <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
-        <p class="shortcut-text"> {{LIBRARY.library_name}} </p>
-      </a>
-      {% endfor %}
-    </div> {% endcomment %}
+    {% comment %} 显示库。遍历拥有的每个库。 {% endcomment %}
   </body>
 </html>

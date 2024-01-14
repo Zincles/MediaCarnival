@@ -1,6 +1,4 @@
-{% load static %}
-
-{% comment %}HOME. 模仿Jellyfin的主页{% endcomment %}
+{% load static %} {% comment %}HOME. 模仿Jellyfin的主页{% endcomment %}
 
 <!DOCTYPE html>
 <html>
@@ -11,5 +9,7 @@
   <body>
     <!-- 首页 -->
     {% include "components/panel/status_panel.html" with TITLE="主页" PARA="欢迎使用MCL!" %}
+
+    <img src="/home/zincles/Projects/MediaCarnival/static/file.svg"/>
   </body>
 </html>

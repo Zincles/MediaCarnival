@@ -1,0 +1,20 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>主页</title>
+
+  </head>
+
+  <body>
+    {% comment %}状态栏{% endcomment %}
+
+    {% include "components/panel/status_panel.html" with TITLE="图像浏览器" PARA="目前没有文件" %}
+
+
+
+    
+    {% comment %}后续部分{% endcomment %}
+  </body>
+</html>

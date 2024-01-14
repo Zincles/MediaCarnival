@@ -1,6 +1,4 @@
-{% load static %}
-
-{% comment %}用于浏览文件。{% endcomment %}
+{% load static %} {% comment %}用于浏览文件。{% endcomment %}
 <!DOCTYPE html>
 <html>
   <head>
@@ -8,10 +6,10 @@
   </head>
 
   <body>
+    <!--  -->
+    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA="File Explorer" %}
 
-
-    {% include "components/panel/status_panel.html" %}
-
+    <!-- -->
     {% include "components/panel/file_browser_panel.html" %}
   </body>
 </html>

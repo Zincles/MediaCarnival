@@ -5,6 +5,6 @@ from . import views
 app_name = "image_viewer"
 
 urlpatterns = [
-    path(route="", view=views.blank, name="blank"), # Blank
-    path(route="<path:image_path>/", view=views.image_viewer, name="library_inspector"),
+    path(route="", view=views.home, name="home"),  # Blank
+    path(route="<path:image_path>/", view=views.load_image, name="library_inspector"),
 ]

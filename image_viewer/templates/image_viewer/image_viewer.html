@@ -1,6 +1,4 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
-{% comment %}HOME. 模仿Jellyfin的主页{% endcomment %}
 
 <!DOCTYPE html>
 <html>
@@ -12,18 +10,16 @@
   <body>
     {% comment %}状态栏{% endcomment %}
 
-    <div class="status-bar">
-      <h1>主页</h1>
-      <p>测试</p>
-      <a href="{% url 'media_library:home' %}">主页</a>
-      <a href="{% url 'media_library:libraries' %}">媒体库</a>
-      <a href="{% url 'media_library:file_browser' %}">文件</a>
-    </div>
+    {% include "components/panel/status_panel.html" with TITLE="图像浏览器" PARA=IMAGE_PATH %}
+
 
     {% comment %}显示文件。每个文件显示为文件夹{% endcomment %}
 
     <div class="panel">
-        IMAGE_PATH IS {{image_path}}
+        IMAGE_PATH IS {{IMAGE_PATH}}
+
+        <img src="/home/zincles/TestCase/img.png" />
+
     </div>
 
     {% comment %}后续部分{% endcomment %}
