@@ -22,4 +22,5 @@ from django.urls import include, path
 urlpatterns = [
     path(route="admin/", view=admin.site.urls),
     path(route="media_library/", view=include("media_library.urls")),
+    path(route="image_viewer/", view=include("image_viewer.urls")),
 ]

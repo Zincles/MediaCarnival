@@ -104,7 +104,7 @@ class MediaUnit(models.Model):
 
 # ============================== #
 #                                #
-#         TMDB 的元数据           #
+#        TMDB 的 基础元数据        #
 #                                #
 # ============================== #
 
@@ -353,6 +353,25 @@ class TmdbMovieDetails(models.Model):
 
         except Exception as e:
             print("更新系列元数据遇到异常", e)
+
+
+# ================================ #
+#                                  #
+#         TMDB 的 图像元数据         #
+#                                  #
+# ================================ #
+
+
+class TmdbImageFile(models.Model):
+    """从TMDB抓取的图像缓存。"""
+
+    @staticmethod
+    def save_image(image_path: str):
+        pass
+
+    @staticmethod
+    def get_image(image_path: str):
+        pass
 
 
 # =================================== #
