@@ -1,0 +1,20 @@
+<!--
+位于网页上端的状态栏。可用于切换界面，效果类似于Jellyfin. 
+  TITLE: 标签
+  PARA : 内容
+-->
+
+<style>
+  .status-panel {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+  }
+</style>
+<div class="status-panel">
+  <h1>{{TITLE|default:"TITLE"}}</h1>
+  <p>{{PARA|default:"PARA"}}</p>
+  <a href="{% url 'media_library:home' %}">主页</a>
+  <a href="{% url 'media_library:libraries' %}">媒体库</a>
+  <a href="{% url 'media_library:file_browser' %}">文件</a>
+</div>

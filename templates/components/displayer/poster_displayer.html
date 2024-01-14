@@ -1,0 +1,14 @@
+<!--
+     用于展示媒体的海报。点击后会触发URL 
+    设置URL:  {URL=??}
+    设置图像： {IMAGE_PATH=??}
+-->
+
+<div class="library-displayer">
+  <a href=" {% url URL  %} ">
+    <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="{{ALT}}" />
+    <p class="shortcut-text"></p>
+    
+</a>
+  {% endfor %}
+</div>

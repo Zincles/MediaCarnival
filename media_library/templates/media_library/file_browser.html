@@ -1,7 +1,6 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
-{% comment %}用于浏览文件。{% endcomment %}
 
+{% comment %}用于浏览文件。{% endcomment %}
 <!DOCTYPE html>
 <html>
   <head>
@@ -9,25 +8,10 @@
   </head>
 
   <body>
-    <h1>WORKING ON PROGRESS...</h1>
 
-    {% comment %}状态栏{% endcomment %}
-    <div class="status-bar">
-      <h1>主页</h1>
-      <p>Media Carnival</p>
-      <a href="{% url 'media_library:home' %}">主页</a>
-      <a href="{% url 'media_library:libraries' %}">媒体库</a>
-      <a href="{% url 'media_library:file_browser' %}">文件</a>
-    </div>
 
-    <!-- 显示文件夹。每个文件显示为文件夹 -->
-    <div class="file-displayer">
-      {% for file_path in file_paths %}
-      <div class="media-display-unit" onclick="alert('{{ file_path }}')">
-        <img class="shortcut-img" src="{% static 'media_library/file.svg' %}" alt="文件" />
-        <p class="shortcut-text">{{ file_path }}</p>
-      </div>
-      {% endfor %}
-    </div>
+    {% include "components/panel/status_panel.html" %}
+
+    {% include "components/panel/file_browser_panel.html" %}
   </body>
 </html>

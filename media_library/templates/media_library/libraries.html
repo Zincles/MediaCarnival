@@ -19,7 +19,11 @@
       <a href="{% url 'media_library:file_browser' %}">文件</a>
     </div>
 
-    {% comment %}显示库。遍历拥有的每个库。{% endcomment %}
+    {% {% include with = %} %}
+
+    
+
+    {% comment %} 显示库。遍历拥有的每个库。
     <div class="library-displayer">
       {% for LIBRARY in LIBRARIES %}
       <a href=" {% url 'media_library:library_inspector' library_id=LIBRARY.id %} ">
@@ -27,6 +31,6 @@
         <p class="shortcut-text"> {{LIBRARY.library_name}} </p>
       </a>
       {% endfor %}
-    </div>
+    </div> {% endcomment %}
   </body>
 </html>

@@ -1,0 +1,24 @@
+<!-- 
+  模仿Jellyfin风格的基础空页 
+  可用Block：
+  - title, 首页
+  - status_panel_title, 状态栏
+  - main_panel_content 主要面板。
+-->
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- 标题部分。 可自行设置-->
+    <title>{% block title %}TITLE{% endblock title %}</title>
+  </head>
+
+  <body>
+    <!-- 状态栏 -->
+    {% include "components/panel/status_panel.html" %}
+
+    <!-- 主要面板 -->
+    {% include "components/panel/main_panel.html" %}
+  </body>
+</html>
