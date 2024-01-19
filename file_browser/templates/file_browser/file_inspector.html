@@ -1,0 +1,46 @@
+{% load static %}
+<!-- 用于检查文件 -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>文件管理器</title>
+    {% include "head.html" %}
+  </head>
+
+  <body>
+    <!--  -->
+    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
+    <pre>
+    路径：   {{path}}
+    文件名： {{name}}
+    拓展名： {{extname}}
+    </pre>
+
+
+    <div id="image-displayer" class="flex justify-center h-screen"></div>
+
+    <script type="text/javascript">
+      // 调用api,通过路径，获取图片
+      var path = "{{path}}";
+      var api_url = "/file_browser/api/get_image" + path;
+      console.log(api_url);
+
+      $.ajax({
+        url: api_url,
+        type: "GET",
+        processData: false,
+        xhrFields: {
+          responseType: "blob",
+        },
+        success: function (blob) {
+          var img = document.createElement("img");
+          img.src = URL.createObjectURL(blob);
+          $("#image-displayer").append(img);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.error("Error:", textStatus, errorThrown);
+        },
+      });
+    </script>
+  </body>
+</html>

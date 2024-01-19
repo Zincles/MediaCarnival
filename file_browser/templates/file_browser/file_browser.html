@@ -23,6 +23,7 @@
       var name = "{{ name|escapejs }}";
       var file_names = JSON.parse("{{ file_names|escapejs }}");
       var file_paths = JSON.parse("{{ file_paths|escapejs }}");
+
       var folder_names = JSON.parse("{{ folder_names|escapejs }}");
       var folder_paths = JSON.parse("{{ folder_paths|escapejs }}");
 
@@ -32,14 +33,14 @@
         // 遍历文件，显示文件
         paths.forEach(function (path, index) {
           var basename = basenames[index];
-          var path_url = "/file_browser" + path
+          var path_url = "/file_browser/browser" + path;
           var displayer = `
           <a href="${path_url}" >
             <div class="file border hover:bg-blue-500 w-32 h-32 bg-white rounded-lg shadow overflow-hidden md:max-w-2xl m-2 p-4">
               <div class="flex items-center justify-center">
                 <i class="${i_class}"></i>
               </div>
-              <div class="file_name text-center text-sm">${basename}</div>
+              <div class="file_name text-center text-sm overflow-hidden  overflow-ellipsis">${basename}</div>
             </div>
           </a>`;
           $("." + container_class).append(displayer);
