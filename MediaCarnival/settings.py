@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "media_library",
     "image_viewer",
     "file_browser",
+    "welcome",
 ]
 
 MIDDLEWARE = [

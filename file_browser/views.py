@@ -9,12 +9,12 @@ def file_browser(request, path=""):
 
     if os.path.isdir(path):
         raws = os.listdir(path)
-        files = [file for file in raws if os.path.isfile(os.path.join(path, file))]
-        folders = [folder for folder in raws if os.path.isdir(os.path.join(path, folder))]
 
-        path_files_folders_json = json.dumps([path, files, folders])
-        print(folders)
-        
+        # path是路径。 根据path路径下的文件创建两个字符串数组，字符串分别为path路径下所有子路径/文件的绝对路径
+        files = [os.path.join(path, raw) for raw in raws if os.path.isfile(os.path.join(path, raw))]
+        folders = [os.path.join(path, raw) for raw in raws if os.path.isdir(os.path.join(path, raw))]
+
+        return HttpResponse(f"This is a Folder {path},<br> files: {files},<br> folders: {folders}")
 
         return render(
             request,
@@ -23,7 +23,8 @@ def file_browser(request, path=""):
                 "PATH": path,
                 "FILES": files,
                 "FOLDERS": folders,
-                "PATH_FILES_FOLDERS_JSON":path_files_folders_json,
+                "FILES_JSON": json.dumps(files),
+                "FOLDERS_JSON": json.dumps(folders),
             },
         )
     else:

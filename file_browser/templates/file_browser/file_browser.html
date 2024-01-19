@@ -10,28 +10,17 @@
     <!--  -->
     {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=PATH %}
 
-    <!-- -->
-    {% include "components/panel/file_browser_panel.html" %}
+    <div>当前路径: {{PATH}} <br />路径下文件: {{FILES}} <br />路径下文件夹: {{FOLDERS}}<br /></div>
 
-    <div id="file_displayer">I AM DISPLAYER</div>
+    <ul>
+      {% for file in FILES %}
+      <li>{{file}}</li>
+      {% endfor %}
+      <br />
+      {% for folder in FOLDERS %}
+      <li>{{folder}}</li>
+      {% endfor %}
+    </ul>
 
-    <div id="path_files_folders_json">{{PATH_FILES_FOLDERS_JSON}}</div>
-
-    <div>
-      当前路径: {{PATH}}
-      <div style="display: none" id="path">{{PATH}}</div>
-    </div>
-
-    <div>
-      路径下文件: {{FILES}}
-      <div style="display: none" id="files">{{FILES}}</div>
-    </div>
-
-    <div>
-      路径下文件夹: {{FOLDERS}}
-      <div style="display: none" id="folders">{{FOLDERS}}</div>
-    </div>
-
-    <script type="text/javascript" src="{% static 'file_browser.js' %}"></script>
   </body>
 </html>
