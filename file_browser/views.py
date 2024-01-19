@@ -14,18 +14,22 @@ def file_browser(request, path=""):
         files = [os.path.join(path, raw) for raw in raws if os.path.isfile(os.path.join(path, raw))]
         folders = [os.path.join(path, raw) for raw in raws if os.path.isdir(os.path.join(path, raw))]
 
-        return HttpResponse(f"This is a Folder {path},<br> files: {files},<br> folders: {folders}")
-
+        # return HttpResponse(f"This is a Folder {path},<br> files: {files},<br> folders: {folders}")
         return render(
             request,
             "file_browser/file_browser.html",
             {
-                "PATH": path,
-                "FILES": files,
-                "FOLDERS": folders,
-                "FILES_JSON": json.dumps(files),
-                "FOLDERS_JSON": json.dumps(folders),
+                "path": path,
+                "name": os.path.basename(path),
+                "file_names": json.dumps([os.path.basename(file) for file in files]),
+                "file_paths": json.dumps(files),
+                "folder_names": json.dumps([os.path.basename(folder) for folder in folders]),
+                "folder_paths": json.dumps(folders),
             },
         )
+
+
+    elif os.path.isfile(path):
+        return HttpResponse("This is a file:" + str(path))
     else:
-        return HttpResponse("This is a file:", path)
+        return HttpResponse("This is not a file or folder:" + str(path))

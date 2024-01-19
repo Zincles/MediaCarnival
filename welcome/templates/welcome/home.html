@@ -4,11 +4,11 @@
 <html>
   <head>
     <title>Welcome to Media Carnival</title>
+    {% include "head.html" %}
   </head>
   <body>
-    <h1>Welcome to Media Carnival</h1>
-    <p>This is a simple test page.</p>
-  
-    <script src="{% static 'welcome/home.js' %}"></script>
-</body>
+    {% include "components/panel/status_panel.html" with TITLE="欢迎！" PARA="初始化界面" %}
+
+    <script type="text/javascript"></script>
+  </body>
 </html>
