@@ -34,12 +34,11 @@
       }
 
       function recalcAllMacy() {
+        console.log("尝试重新排列所有Macy:", macyInstances.length, macyInstances);
+
         macyInstances.forEach((macyInstance) => {
-          macyInstance.recalculate(true);
-          console.log(macyInstance);
+          console.log("Recalc: ", macyInstance.recalculate(true));
         });
-        console.log("更新全部Macy完毕: " + macyInstances);
-        //return true;
       }
 
       function getIcon(filename) {
@@ -67,90 +66,103 @@
         }
       }
 
+      function isPreviewable(filename) {
+        var extension = filename.split(".").pop().toLowerCase();
+        return ["jpg", "png", "gif"].includes(extension);
+      }
+
       // 读取文件。可设置为网格或流式样式。（grid, flow）
       // 流式样式高度不固定，网格样式各元素大小完全固定。
 
-      function asyncLoadFiles(style = "grid", column = 4) {
-        if (isLoading) {
-          return;
-        }
+      function asyncLoadFiles(style = "flow", column = 4) {
+        return new Promise((resolve, reject) => {
+          if (isLoading) {
+            resolve();
+            return;
+          }
 
-        isLoading = true;
+          isLoading = true;
 
-        $.ajax({
-          url: "/file_browser/api/get_folder" + path + "/",
-          data: {
-            page: page,
-            page_size: page_size,
-          },
-          success: function (data) {
-            data = JSON.parse(data);
+          $.ajax({
+            url: "/file_browser/api/get_folder" + path + "/",
+            data: {
+              page: page,
+              page_size: page_size,
+            },
+            success: function (data) {
+              data = JSON.parse(data);
 
-            // 如果没有数据了，就不再加载
-            if (data.paths.length == 0) {
-              isLoading = true;
-              return;
-            }
-            page += 1;
-
-            const data_paths = data.paths;
-            const data_names = data.names;
-
-            // 创建容器，创建Macy实例，将容器添加到DOM中
-            let macyContainer = $('<div class="macy-container"></div>');
-            let macyInstance = Macy({
-              container: macyContainer[0],
-              margin: 16,
-              columns: column,
-            });
-            macyInstances.push(macyInstance);
-            macyContainer[0].macyinstance = macyInstance;
-            $("#macy-containers").append(macyContainer[0]);
-
-            // 遍历元素，向容器添加元素
-            data_paths.forEach((path, index) => {
-              const name = data_names[index];
-              const path_url = "/file_browser/browser" + path;
-              const type = data.types[index];
-
-              let card = $(
-                `<a href="${path_url}" class="card border hover:bg-blue-500 shadow bg-white rounded-lg  overflow-hidden p-4 "></a>`
-              );
-              macyContainer.append(card);
-
-              let icon = $(`<div class="flex justify-center items-center">${getIcon(name)}</div>`); // 设置卡片的图标
-              card.append(icon);
-              card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`); // 设置文本
-
-              // 是文本且为FLOW,则考虑显示图像
-              if (isImage(name) && style == "flow") {
-                let api_url = "/file_browser/api/get_image" + path;
-
-                // 创建一个占位符
-                let placeholder = $('<div class="w-full h-full bg-gray-200"></div>');
-                card.append(placeholder);
-
-                // 创建图像元素，但不立即添加到 DOM 中. 当图像加载完成后，替换占位符
-                let preview = $(`<img src="${api_url}" class="w-full h-full object-cover">`);
-                preview.on("load", function () {
-                  placeholder.replaceWith(preview);
-                  macyInstance.recalculate(true);
-                });
+              // 如果没有数据了，就不再加载
+              if (data.paths.length == 0) {
+                isLoading = true;
+                resolve();
+                return;
               }
-            });
-            isLoading = false;
-            recalcAllMacy();
-          },
+              page += 1;
 
-          error: function (data) {
-            isLoading = false;
+              const data_paths = data.paths;
+              const data_names = data.names;
 
-            data = data.response;
-            alert(data);
-          },
-        }).done(function () {
-          console.log("AJAX加载完成,此时：", macyInstances);
-          recalcAllMacy();
+              // 创建容器，创建Macy实例，将容器添加到DOM中
+              let macyContainer = $('<div class="macy-container"></div>');
+              let macyInstance = Macy({
+                container: macyContainer[0],
+                margin: 16,
+                columns: column,
+              });
+              macyInstances.push(macyInstance);
+              macyContainer[0].macyinstance = macyInstance;
+              $("#macy-containers").append(macyContainer[0]);
+              macyInstance.runOnImageLoad(() => {
+                macyInstance.recalculate();
+              }, true);
+
+              // 遍历元素，向容器添加元素
+              data_paths.forEach((path, index) => {
+                const name = data_names[index];
+                const path_url = "/file_browser/browser" + path;
+                const type = data.types[index];
+
+                let card = $(
+                  `<a href="${path_url}" class="card border hover:bg-blue-500 shadow bg-white rounded-lg  overflow-hidden p-4 "></a>`
+                );
+                macyContainer.append(card);
+                let icon = !isPreviewable(name) ? getIcon(name) : "";
+                
+                card.append(`<div class="flex justify-center items-center">${icon}</div>`);// 设置卡片的图标
+                card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`); // 设置文本
+
+                // 是文本且为FLOW,则考虑显示图像
+                if (isImage(name) && style == "flow") {
+                  let api_url = "/file_browser/api/get_image" + path;
+
+                  // 创建一个占位符
+                  let placeholder = $('<div class="w-full h-full bg-gray-200"></div>');
+                  card.append(placeholder);
+
+                  // 创建图像元素，但不立即添加到 DOM 中. 当图像加载完成后，替换占位符
+                  let preview = $(`<img src="${api_url}" class="w-full h-full object-cover">`);
+                  preview.on("load", function () {
+                    placeholder.replaceWith(preview);
+                    macyInstance.recalculate(true);
+                  });
+                }
+              });
+              isLoading = false;
+              recalcAllMacy();
+              resolve();
+              return;
+            },
+
+            error: function (data) {
+              isLoading = false;
+
+              data = data.response;
+              alert(data);
+              reject();
+              return;
+            },
+          });
         });
       }
 
@@ -158,13 +170,16 @@
       $(window).scroll(function () {
         if ($(document).height() - $(window).scrollTop() - $(window).height() <= 10) {
           console.log("Reached bottom!");
-          asyncLoadFiles();
+          asyncLoadFiles().then(recalcAllMacy);
         }
       });
 
       $(document).ready(function () {
-        asyncLoadFiles();
-        recalcAllMacy();
+        asyncLoadFiles().then(function () {
+          setTimeout(() => {
+            recalcAllMacy();
+          }, 1);
+        });
       });
     </script>
   </body>
