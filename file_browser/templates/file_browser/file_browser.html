@@ -11,8 +11,8 @@
     <!-- 顶部导航栏 -->
     {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
 
-    <!-- 容纳复数个MacyContainer. 每个macy-container都代表一个loadFiles()所创建的实例。 -->
-    <div id="macy-containers" class="macy-containers"></div>
+    <!-- 容纳复数个MacyContainer. 每个macy-container都代表一个asyncLoadFiles()所创建的实例。 -->
+    <div id="macy-containers"></div>
 
     <!--  -->
     <script type="text/javascript">
@@ -33,9 +33,44 @@
         return ["jpg", "png", "gif"].includes(extension);
       }
 
+      function recalcAllMacy() {
+        macyInstances.forEach((macyInstance) => {
+          macyInstance.recalculate(true);
+          console.log(macyInstance);
+        });
+        console.log("更新全部Macy完毕: " + macyInstances);
+        //return true;
+      }
+
+      function getIcon(filename) {
+        var extension = filename.split(".").pop().toLowerCase();
+        if (["jpg", "png", "gif"].includes(extension)) {
+          return '<i class="fas fa-file-image text-5xl"></i>';
+        } else if (["mp4", "avi", "mkv"].includes(extension)) {
+          return '<i class="fas fa-file-video text-5xl"></i>';
+        } else if (["mp3", "wav", "flac"].includes(extension)) {
+          return '<i class="fas fa-file-audio text-5xl"></i>';
+        } else if (["doc", "docx"].includes(extension)) {
+          return '<i class="fas fa-file-word text-5xl"></i>';
+        } else if (["xls", "xlsx"].includes(extension)) {
+          return '<i class="fas fa-file-excel text-5xl"></i>';
+        } else if (["ppt", "pptx"].includes(extension)) {
+          return '<i class="fas fa-file-powerpoint text-5xl"></i>';
+        } else if (["pdf"].includes(extension)) {
+          return '<i class="fas fa-file-pdf text-5xl"></i>';
+        } else if (["zip", "rar", "7z"].includes(extension)) {
+          return '<i class="fas fa-file-archive text-5xl"></i>';
+        } else if (["txt"].includes(extension)) {
+          return '<i class="fas fa-file-alt text-5xl"></i>';
+        } else {
+          return '<i class="fas fa-file text-5xl"></i>';
+        }
+      }
+
       // 读取文件。可设置为网格或流式样式。（grid, flow）
       // 流式样式高度不固定，网格样式各元素大小完全固定。
-      function loadFiles(style = "grid", column = 4) {
+
+      function asyncLoadFiles(style = "grid", column = 4) {
         if (isLoading) {
           return;
         }
@@ -55,63 +90,39 @@
             if (data.paths.length == 0) {
               isLoading = true;
               return;
-            } else {
-              console.log(data);
             }
-
             page += 1;
 
             const data_paths = data.paths;
             const data_names = data.names;
 
-            // 创建新的 macy-container 容器
-            var macyContainer = $('<div class="macy-container"></div>');
-            console.log("创建了MACY容器:", macyContainer[0]);
-
-            // 初始化 Macy
-            var macyInstance = Macy({
+            // 创建容器，创建Macy实例，将容器添加到DOM中
+            let macyContainer = $('<div class="macy-container"></div>');
+            let macyInstance = Macy({
               container: macyContainer[0],
-              waitForImages: false,
               margin: 16,
               columns: column,
             });
-            macyContainer[0].macyInstance = macyInstance;
             macyInstances.push(macyInstance);
+            macyContainer[0].macyinstance = macyInstance;
+            $("#macy-containers").append(macyContainer[0]);
 
-            
-
-
-            // 使用forEach遍历元素，向macy-container容器添加元素。大小固定。每次迭代创建一个card
+            // 遍历元素，向容器添加元素
             data_paths.forEach((path, index) => {
               const name = data_names[index];
               const path_url = "/file_browser/browser" + path;
               const type = data.types[index];
 
-              var card = $(
+              let card = $(
                 `<a href="${path_url}" class="card border hover:bg-blue-500 shadow bg-white rounded-lg  overflow-hidden p-4 "></a>`
               );
+              macyContainer.append(card);
 
-              // 设置排列方式
-              if (style == "flow") {
-                card.addClass("");
-              } else if (style == "grid") {
-                card.addClass("");
-              }
+              let icon = $(`<div class="flex justify-center items-center">${getIcon(name)}</div>`); // 设置卡片的图标
+              card.append(icon);
+              card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`); // 设置文本
 
-              // 设置卡片的图标
-              if (type == "folder") {
-                card.append(
-                  '<div class="flex justify-center items-center"><i class="fas fa-folder text-5xl"></i></div>'
-                );
-              } else if (type == "file" && !isImage(name)) {
-                card.append('<div class="flex justify-center items-center"><i class="fas fa-file text-5xl"></i></div>');
-              }else { // is image,
-                card.append('<div class="flex justify-center items-center"><i class="fas fa-file text-5xl"></i></div>');
-              }
-
-              card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`);
-
-
+              // 是文本且为FLOW,则考虑显示图像
               if (isImage(name) && style == "flow") {
                 let api_url = "/file_browser/api/get_image" + path;
 
@@ -123,23 +134,12 @@
                 let preview = $(`<img src="${api_url}" class="w-full h-full object-cover">`);
                 preview.on("load", function () {
                   placeholder.replaceWith(preview);
-                  //macyInstance.recalculate(true);
+                  macyInstance.recalculate(true);
                 });
-                //macyInstance.recalculate(true);
               }
-
-              // 将卡片添加到 macy-container 容器中
-              macyContainer.append(card);
             });
-
-            // 将 macy-container 容器添加到 macy-containers 中
-            $("#macy-containers").append(macyContainer[0]);
-
-            alert(macyContainer[0].macyInstance)
-            // 重新计算布局
-            //macyInstance.recalculate();
-
             isLoading = false;
+            recalcAllMacy();
           },
 
           error: function (data) {
@@ -148,6 +148,9 @@
             data = data.response;
             alert(data);
           },
+        }).done(function () {
+          console.log("AJAX加载完成,此时：", macyInstances);
+          recalcAllMacy();
         });
       }
 
@@ -155,11 +158,14 @@
       $(window).scroll(function () {
         if ($(document).height() - $(window).scrollTop() - $(window).height() <= 10) {
           console.log("Reached bottom!");
-          loadFiles();
+          asyncLoadFiles();
         }
       });
 
-      loadFiles();
+      $(document).ready(function () {
+        asyncLoadFiles();
+        recalcAllMacy();
+      });
     </script>
   </body>
 </html>
