@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core.apps.CoreConfig",
     "media_library",
-    "image_viewer",
     "file_browser",
     "welcome",
 ]

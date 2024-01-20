@@ -1,11 +1,4 @@
 {% load static %}
-<!--  
-  总览所有的Library.
-
-  接受来自Python文件的输入： 
-  - LIBRARIES
-
--->
 
 <!DOCTYPE html>
 <html>
@@ -14,21 +7,15 @@
     {% include "head.html" %}
   </head>
 
-  <body>
+  <body class="bg-neutral-900">
     <!-- 状态栏 -->
     {% include "components/panel/status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
 
     <!-- 媒体库显示器，显示来自Python的输入 -->
     <div>
-      {% for LIBRARY in LIBRARIES %} {% comment %}
-      <a href=" {% url ' library_id=LIBRARY.id %} ">
-        <img class="shortcut-img" src="{% static 'media_library/library.svg' %}" alt="媒体库" />
-        <p class="shortcut-text">{{LIBRARY.library_name}}</p>
-      </a>
-      {% endcomment %}
+      {% for LIBRARY in LIBRARIES %}
       <!-- -->
       {% include "components/image_displayer/landscape_displayer.html" %}
-
       <!-- -->
       {% endfor %}
     </div>

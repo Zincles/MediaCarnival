@@ -7,7 +7,7 @@
     {% include "head.html" %}
   </head>
 
-  <body>
+  <body class="bg-neutral-900">
     <!--  -->
     {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
     <pre>
@@ -15,7 +15,6 @@
     文件名： {{name}}
     拓展名： {{extname}}
     </pre>
-
 
     <div id="image-displayer" class="flex justify-center h-screen"></div>
 

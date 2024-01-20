@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, FileResponse
 from django.shortcuts import render
 from django.core.paginator import Paginator
 import os
@@ -7,10 +7,9 @@ import json
 
 ## 获取文件夹下的所有文件与文件夹。可指定页数，每页的数量，排序方式，排序顺序
 def api_get_folder(request, path: str):
-    
     # 获取查询参数
-    page:int = request.GET.get("page", 1) 
-    page_size:int = request.GET.get("page_size", 100)  
+    page: int = request.GET.get("page", 1)
+    page_size: int = request.GET.get("page_size", 100)
     sort = request.GET.get("sort", "name")
     order = request.GET.get("order", "asc")
 
@@ -26,20 +25,10 @@ def api_get_folder(request, path: str):
         # 分页. 从第page页开始，每页page_size个。
         paginator = Paginator(_names, page_size)
 
-        
         # 如果请求的页数超过了总页数，返回一个空的响应
         if int(page) > int(paginator.num_pages):
-            return HttpResponse(
-                json.dumps({
-                    "names": [],
-                    "paths": [],
-                    "types": [],
-                    "is_end": True
-                })
-            )
-        
-        
-        
+            return HttpResponse(json.dumps({"names": [], "paths": [], "types": [], "is_end": True}))
+
         names = paginator.get_page(page).object_list
         is_end = not paginator.page(page).has_next()
 
@@ -51,6 +40,7 @@ def api_get_folder(request, path: str):
                 {
                     "page": page,  # 当前页码
                     "page_size": page_size,  # 每页的数量
+                    "total_pages": paginator.num_pages,  # 总页数
                     "sort": sort,  # 排序方式
                     "order": order,  # 排序顺序
                     "path": path,  # 当前目录
@@ -88,6 +78,9 @@ def api_get_image(request, path: str):
         case ".jpg":
             with open(FILE_PATH, "rb") as f:
                 return HttpResponse(f.read(), content_type="image/jpg")
+        case ".gif":
+            with open(FILE_PATH, "rb") as f:
+                return HttpResponse(f.read(), content_type="image/gif")
         case ".jpeg":
             with open(FILE_PATH, "rb") as f:
                 return HttpResponse(f.read(), content_type="image/jpeg")

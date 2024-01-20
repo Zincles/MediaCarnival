@@ -1,4 +1,4 @@
-{% load static %} {% comment %}HOME. 模仿Jellyfin的主页{% endcomment %}
+{% load static %}
 
 <!DOCTYPE html>
 <html>
@@ -7,10 +7,8 @@
     {% include "head.html" %}
   </head>
 
-  <body>
+  <body class="bg-neutral-900">
     <!-- 首页 -->
     {% include "components/panel/status_panel.html" with TITLE="主页" PARA="欢迎使用MCL!" %}
-
-    {% comment %} <img src="/home/zincles/Projects/MediaCarnival/static/file.svg"/> {% endcomment %}
   </body>
 </html>

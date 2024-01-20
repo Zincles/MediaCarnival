@@ -7,12 +7,12 @@
     {% include "head.html" %}
   </head>
 
-  <body>
+  <body class="bg-neutral-900">
     <!-- 顶部导航栏 -->
     {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
 
     <!-- 容纳复数个MacyContainer. 每个macy-container都代表一个asyncLoadFiles()所创建的实例。 -->
-    <div id="macy-containers"></div>
+    <div id="macy-containers" class="m-4"></div>
 
     <!--  -->
     <script type="text/javascript">
@@ -30,7 +30,7 @@
       // 判断文件是否为图片
       function isImage(filename) {
         var extension = filename.split(".").pop().toLowerCase();
-        return ["jpg", "png", "gif"].includes(extension);
+        return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension);
       }
 
       function recalcAllMacy() {
@@ -41,34 +41,40 @@
         });
       }
 
-      function getIcon(filename) {
+      function getIcon(filename, is_folder = false) {
+        //console.log(filename, is_folder)
         var extension = filename.split(".").pop().toLowerCase();
-        if (["jpg", "png", "gif"].includes(extension)) {
-          return '<i class="fas fa-file-image text-5xl"></i>';
+        var result = "";
+
+        if (is_folder) {
+          result = "fas fa-folder";
+        } else if (["jpg", "png", "gif"].includes(extension)) {
+          result = "fas fa-file-image";
         } else if (["mp4", "avi", "mkv"].includes(extension)) {
-          return '<i class="fas fa-file-video text-5xl"></i>';
+          result = "fas fa-file-video";
         } else if (["mp3", "wav", "flac"].includes(extension)) {
-          return '<i class="fas fa-file-audio text-5xl"></i>';
+          result = "fas fa-file-audio";
         } else if (["doc", "docx"].includes(extension)) {
-          return '<i class="fas fa-file-word text-5xl"></i>';
+          result = "fas fa-file-word";
         } else if (["xls", "xlsx"].includes(extension)) {
-          return '<i class="fas fa-file-excel text-5xl"></i>';
+          result = "fas fa-file-excel";
         } else if (["ppt", "pptx"].includes(extension)) {
-          return '<i class="fas fa-file-powerpoint text-5xl"></i>';
+          result = "fas fa-file-powerpoint";
         } else if (["pdf"].includes(extension)) {
-          return '<i class="fas fa-file-pdf text-5xl"></i>';
+          result = "fas fa-file-pdf";
         } else if (["zip", "rar", "7z"].includes(extension)) {
-          return '<i class="fas fa-file-archive text-5xl"></i>';
+          result = "fas fa-file-archive";
         } else if (["txt"].includes(extension)) {
-          return '<i class="fas fa-file-alt text-5xl"></i>';
+          result = "fas fa-file-alt";
         } else {
-          return '<i class="fas fa-file text-5xl"></i>';
+          result = "fas fa-file";
         }
+        return `<i class="${result} text-5xl text-neutral-200"></i>`;
       }
 
+      // 判断文件是否可以预览
       function isPreviewable(filename) {
-        var extension = filename.split(".").pop().toLowerCase();
-        return ["jpg", "png", "gif"].includes(extension);
+        return isImage(filename);
       }
 
       // 读取文件。可设置为网格或流式样式。（grid, flow）
@@ -103,6 +109,13 @@
               const data_paths = data.paths;
               const data_names = data.names;
 
+              // 添加分隔符，用于分隔两个不同批次的文件集合
+              const total_pages = data.total_pages;
+              let splitter = $(`<div class='text-center text-white text-sm m-2'>
+                <div class="text-sm round-lg bg-neutral-800 rounded-lg p-1">第${page - 1}页  /  共${total_pages}页</div>
+              </div>`);
+              $("#macy-containers").append(splitter);
+
               // 创建容器，创建Macy实例，将容器添加到DOM中
               let macyContainer = $('<div class="macy-container"></div>');
               let macyInstance = Macy({
@@ -124,13 +137,13 @@
                 const type = data.types[index];
 
                 let card = $(
-                  `<a href="${path_url}" class="card border hover:bg-blue-500 shadow bg-white rounded-lg  overflow-hidden p-4 "></a>`
+                  `<a href="${path_url}" class="card hover:bg-blue-500 shadow bg-neutral-700 rounded-lg  overflow-hidden p-2 "></a>`
                 );
                 macyContainer.append(card);
-                let icon = !isPreviewable(name) ? getIcon(name) : "";
-                
-                card.append(`<div class="flex justify-center items-center">${icon}</div>`);// 设置卡片的图标
-                card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`); // 设置文本
+                let icon = isPreviewable(name) && style == "flow" ? "" : getIcon(name, type == "folder");
+
+                card.append(`<div class="flex justify-center items-center">${icon}</div>`); // 设置卡片的图标
+                card.append(`<p class=" text-white text-center whitespace-nowrap overflow-ellipsis">${name}</p>`); // 设置文本
 
                 // 是文本且为FLOW,则考虑显示图像
                 if (isImage(name) && style == "flow") {
