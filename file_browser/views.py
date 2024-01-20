@@ -33,6 +33,7 @@ def file_browser(request, path=""):
                 "folder_names": json.dumps(folder_names),
                 "folder_paths": json.dumps(folder_paths),
 
+                "preview_image" : False,
             },
         )
 

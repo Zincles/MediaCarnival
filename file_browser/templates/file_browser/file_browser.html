@@ -8,48 +8,84 @@
   </head>
 
   <body>
-    <!--  -->
-    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %} {% comment %}
-    <div>当前路径: {{path}} <br />路径下文件: {{files}} <br />路径下文件夹: {{folders}}<br /></div>
-    {% endcomment %}
+    <!-- 顶部导航栏 -->
+    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %} {{ preview_image }}
 
     <!-- 显示文件夹与文件的容器 -->
-    <div class="folders-container grid grid-cols-8"></div>
-    <div class="files-container grid grid-cols-8"></div>
+    <div id="macy-container" class="macy-container"></div>
 
+    <!--  -->
     <script type="text/javascript">
-      // 获取数据
-      var path = "{{ path|escapejs }}";
-      var name = "{{ name|escapejs }}";
-      var file_names = JSON.parse("{{ file_names|escapejs }}");
-      var file_paths = JSON.parse("{{ file_paths|escapejs }}");
 
-      var folder_names = JSON.parse("{{ folder_names|escapejs }}");
-      var folder_paths = JSON.parse("{{ folder_paths|escapejs }}");
+       // 获取数据
+       var path = "{{ path|escapejs }}";
+       var name = "{{ name|escapejs }}";
+       var file_names = JSON.parse("{{ file_names|escapejs }}");
+       var file_paths = JSON.parse("{{ file_paths|escapejs }}");
+       var folder_names = JSON.parse("{{ folder_names|escapejs }}");
+       var folder_paths = JSON.parse("{{ folder_paths|escapejs }}");
 
-      // 根据路径，添加div。
-      // paths: 路径数组, basenames: 文件名数组, container: 添加的容器的类, icon_i: 图标的i标签
-      function add_clickable_divs(paths, basenames, container_class, i_class) {
-        // 遍历文件，显示文件
-        paths.forEach(function (path, index) {
-          var basename = basenames[index];
-          var path_url = "/file_browser/browser" + path;
-          var displayer = `
-          <a href="${path_url}" >
-            <div class="file border hover:bg-blue-500 w-32 h-32 bg-white rounded-lg shadow overflow-hidden md:max-w-2xl m-2 p-4">
-              <div class="flex items-center justify-center">
-                <i class="${i_class}"></i>
-              </div>
-              <div class="file_name text-center text-sm overflow-hidden  overflow-ellipsis">${basename}</div>
-            </div>
-          </a>`;
-          $("." + container_class).append(displayer);
-        });
-      }
+       // 是否预览图片
+       var preview_image = {% if preview_image %} true {% else %} false {% endif %};
 
-      // 添加可点击的文件与文件夹
-      add_clickable_divs(file_paths, file_names, "files-container", "fas fa-file fa-4x");
-      add_clickable_divs(folder_paths, folder_names, "folders-container", "fas fa-folder fa-4x");
+       // 瀑布流Macy实例
+       var macyInstance = Macy({
+         container: "#macy-container",
+         trueOrder: false,
+         waitForImages: false,
+         margin: 24,
+         breakAt: {
+           1200: 16,
+           400: 8,
+         },
+       });
+
+       function getExtension(filename) {
+         return filename.split('.').pop();
+       }
+
+       function isImage(filename) {
+         var extension = getExtension(filename);
+         return ['jpg', 'png', 'gif'].includes(extension);
+       }
+
+       // 根据路径，添加div。
+       // paths: 路径数组, basenames: 文件名数组, container: 添加的容器的类, icon_i: 图标的i标签
+       function add_clickable_divs(paths, basenames, container_class, i_class) {
+         // 遍历元素，显示元素。大小固定。
+         paths.forEach(function (path, index) {
+           var basename = basenames[index];
+           var path_url = "/file_browser/browser" + path;
+
+           if (isImage(basename) && preview_image) {
+             var api_url = "/file_browser/api/get_image" + path;
+             var preview = `<img src="${api_url}" class="w-full h-full object-cover">`;
+           } else {
+             var preview = `<i class="${i_class}"></i>`;
+           }
+
+           var displayer = `
+             <a href="${path_url}" class="file border hover:bg-blue-500  bg-white rounded-lg shadow overflow-hidden p-4" >
+                 <div class="flex items-center justify-center">
+                   ${preview}
+                 </div>
+                 <div class="file_name text-center text-sm overflow-hidden  overflow-ellipsis">${basename}</div>
+             </a>`;
+           $("." + container_class).append(displayer);
+
+           // 添加新的元素后，重新计算布局
+           macyInstance.recalculate();
+         });
+       }
+
+
+       // 添加可点击的文件与文件夹
+       add_clickable_divs(file_paths, file_names, "macy-container", "fas fa-file fa-4x");
+       add_clickable_divs(folder_paths, folder_names, "macy-container", "fas fa-folder fa-4x");
+
+      macyInstance.runOnImageLoad(function () {
+         macyInstance.recalculate();
+       });
     </script>
   </body>
 </html>
