@@ -9,8 +9,8 @@ import json
 def api_get_folder(request, path: str):
     
     # 获取查询参数
-    page = request.GET.get("page", 1) 
-    page_size = request.GET.get("page_size", 50)  
+    page:int = request.GET.get("page", 1) 
+    page_size:int = request.GET.get("page_size", 100)  
     sort = request.GET.get("sort", "name")
     order = request.GET.get("order", "asc")
 
@@ -25,6 +25,21 @@ def api_get_folder(request, path: str):
 
         # 分页. 从第page页开始，每页page_size个。
         paginator = Paginator(_names, page_size)
+
+        
+        # 如果请求的页数超过了总页数，返回一个空的响应
+        if int(page) > int(paginator.num_pages):
+            return HttpResponse(
+                json.dumps({
+                    "names": [],
+                    "paths": [],
+                    "types": [],
+                    "is_end": True
+                })
+            )
+        
+        
+        
         names = paginator.get_page(page).object_list
         is_end = not paginator.page(page).has_next()
 

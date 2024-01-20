@@ -9,83 +9,157 @@
 
   <body>
     <!-- 顶部导航栏 -->
-    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %} {{ preview_image }}
+    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
 
-    <!-- 显示文件夹与文件的容器 -->
-    <div id="macy-container" class="macy-container"></div>
+    <!-- 容纳复数个MacyContainer. 每个macy-container都代表一个loadFiles()所创建的实例。 -->
+    <div id="macy-containers" class="macy-containers"></div>
 
     <!--  -->
     <script type="text/javascript">
+      // 获取数据
+      var path = "{{ path|escapejs }}";
+      var name = "{{ name|escapejs }}";
 
-       // 获取数据
-       var path = "{{ path|escapejs }}";
-       var name = "{{ name|escapejs }}";
-       var file_names = JSON.parse("{{ file_names|escapejs }}");
-       var file_paths = JSON.parse("{{ file_paths|escapejs }}");
-       var folder_names = JSON.parse("{{ folder_names|escapejs }}");
-       var folder_paths = JSON.parse("{{ folder_paths|escapejs }}");
+      var page = 1;
+      var page_size = 50;
 
-       // 是否预览图片
-       var preview_image = {% if preview_image %} true {% else %} false {% endif %};
+      var isLoading = false;
 
-       // 瀑布流Macy实例
-       var macyInstance = Macy({
-         container: "#macy-container",
-         trueOrder: false,
-         waitForImages: false,
-         margin: 24,
-         breakAt: {
-           1200: 16,
-           400: 8,
-         },
-       });
+      var macyInstances = [];
 
-       function getExtension(filename) {
-         return filename.split('.').pop();
-       }
+      // 判断文件是否为图片
+      function isImage(filename) {
+        var extension = filename.split(".").pop().toLowerCase();
+        return ["jpg", "png", "gif"].includes(extension);
+      }
 
-       function isImage(filename) {
-         var extension = getExtension(filename);
-         return ['jpg', 'png', 'gif'].includes(extension);
-       }
+      // 读取文件。可设置为网格或流式样式。（grid, flow）
+      // 流式样式高度不固定，网格样式各元素大小完全固定。
+      function loadFiles(style = "grid", column = 4) {
+        if (isLoading) {
+          return;
+        }
 
-       // 根据路径，添加div。
-       // paths: 路径数组, basenames: 文件名数组, container: 添加的容器的类, icon_i: 图标的i标签
-       function add_clickable_divs(paths, basenames, container_class, i_class) {
-         // 遍历元素，显示元素。大小固定。
-         paths.forEach(function (path, index) {
-           var basename = basenames[index];
-           var path_url = "/file_browser/browser" + path;
+        isLoading = true;
 
-           if (isImage(basename) && preview_image) {
-             var api_url = "/file_browser/api/get_image" + path;
-             var preview = `<img src="${api_url}" class="w-full h-full object-cover">`;
-           } else {
-             var preview = `<i class="${i_class}"></i>`;
-           }
+        $.ajax({
+          url: "/file_browser/api/get_folder" + path + "/",
+          data: {
+            page: page,
+            page_size: page_size,
+          },
+          success: function (data) {
+            data = JSON.parse(data);
 
-           var displayer = `
-             <a href="${path_url}" class="file border hover:bg-blue-500  bg-white rounded-lg shadow overflow-hidden p-4" >
-                 <div class="flex items-center justify-center">
-                   ${preview}
-                 </div>
-                 <div class="file_name text-center text-sm overflow-hidden  overflow-ellipsis">${basename}</div>
-             </a>`;
-           $("." + container_class).append(displayer);
+            // 如果没有数据了，就不再加载
+            if (data.paths.length == 0) {
+              isLoading = true;
+              return;
+            } else {
+              console.log(data);
+            }
 
-           // 添加新的元素后，重新计算布局
-           macyInstance.recalculate();
-         });
-       }
+            page += 1;
+
+            const data_paths = data.paths;
+            const data_names = data.names;
+
+            // 创建新的 macy-container 容器
+            var macyContainer = $('<div class="macy-container"></div>');
+            console.log("创建了MACY容器:", macyContainer[0]);
+
+            // 初始化 Macy
+            var macyInstance = Macy({
+              container: macyContainer[0],
+              waitForImages: false,
+              margin: 16,
+              columns: column,
+            });
+            macyContainer[0].macyInstance = macyInstance;
+            macyInstances.push(macyInstance);
+
+            
 
 
-       // 添加可点击的文件与文件夹
-       add_clickable_divs(file_paths, file_names, "macy-container", "fas fa-file fa-4x");
-       add_clickable_divs(folder_paths, folder_names, "macy-container", "fas fa-folder fa-4x");
+            // 使用forEach遍历元素，向macy-container容器添加元素。大小固定。每次迭代创建一个card
+            data_paths.forEach((path, index) => {
+              const name = data_names[index];
+              const path_url = "/file_browser/browser" + path;
+              const type = data.types[index];
 
-      macyInstance.runOnImageLoad(function () {
-         macyInstance.recalculate();
-       });
+              var card = $(
+                `<a href="${path_url}" class="card border hover:bg-blue-500 shadow bg-white rounded-lg  overflow-hidden p-4 "></a>`
+              );
+
+              // 设置排列方式
+              if (style == "flow") {
+                card.addClass("");
+              } else if (style == "grid") {
+                card.addClass("");
+              }
+
+              // 设置卡片的图标
+              if (type == "folder") {
+                card.append(
+                  '<div class="flex justify-center items-center"><i class="fas fa-folder text-5xl"></i></div>'
+                );
+              } else if (type == "file" && !isImage(name)) {
+                card.append('<div class="flex justify-center items-center"><i class="fas fa-file text-5xl"></i></div>');
+              }else { // is image,
+                card.append('<div class="flex justify-center items-center"><i class="fas fa-file text-5xl"></i></div>');
+              }
+
+              card.append(`<p class=" whitespace-nowrap overflow-ellipsis">${name}</p>`);
+
+
+              if (isImage(name) && style == "flow") {
+                let api_url = "/file_browser/api/get_image" + path;
+
+                // 创建一个占位符
+                let placeholder = $('<div class="w-full h-full bg-gray-200"></div>');
+                card.append(placeholder);
+
+                // 创建图像元素，但不立即添加到 DOM 中. 当图像加载完成后，替换占位符
+                let preview = $(`<img src="${api_url}" class="w-full h-full object-cover">`);
+                preview.on("load", function () {
+                  placeholder.replaceWith(preview);
+                  //macyInstance.recalculate(true);
+                });
+                //macyInstance.recalculate(true);
+              }
+
+              // 将卡片添加到 macy-container 容器中
+              macyContainer.append(card);
+            });
+
+            // 将 macy-container 容器添加到 macy-containers 中
+            $("#macy-containers").append(macyContainer[0]);
+
+            alert(macyContainer[0].macyInstance)
+            // 重新计算布局
+            //macyInstance.recalculate();
+
+            isLoading = false;
+          },
+
+          error: function (data) {
+            isLoading = false;
+
+            data = data.response;
+            alert(data);
+          },
+        });
+      }
+
+      // 处理滚动事件，当滚动到底部时，加载更多文件。
+      $(window).scroll(function () {
+        if ($(document).height() - $(window).scrollTop() - $(window).height() <= 10) {
+          console.log("Reached bottom!");
+          loadFiles();
+        }
+      });
+
+      loadFiles();
     </script>
   </body>
 </html>

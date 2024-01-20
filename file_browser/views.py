@@ -28,10 +28,10 @@ def file_browser(request, path=""):
             {
                 "path": path,
                 "name": name,
-                "file_names": json.dumps(file_names),
-                "file_paths": json.dumps(file_paths),
-                "folder_names": json.dumps(folder_names),
-                "folder_paths": json.dumps(folder_paths),
+                # "file_names": json.dumps(file_names),
+                # "file_paths": json.dumps(file_paths),
+                # "folder_names": json.dumps(folder_names),
+                # "folder_paths": json.dumps(folder_paths),
 
                 "preview_image" : True,
             },
