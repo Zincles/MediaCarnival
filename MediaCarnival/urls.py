@@ -15,4 +15,6 @@ urlpatterns = [
     path(route="media_library/", view=include("media_library.urls")),
     path(route="file_browser/", view=include("file_browser.urls")),
     path(route="welcome/", view=include("welcome.urls")),
+    path(route="server_config/", view=include("server_config.urls")),
+    path(route="user_config/", view=include("user_config.urls")),
 ]

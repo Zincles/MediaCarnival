@@ -1,0 +1,14 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>主页</title>
+    {% include "head.html" %}
+  </head>
+
+  <body class="bg-neutral-900">
+    <!-- 首页 -->
+    {% include "components/panel/status_panel.html" with TITLE="用户设置" PARA="设置当前用户" %}
+  </body>
+</html>

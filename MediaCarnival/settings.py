@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "media_library",
     "file_browser",
     "welcome",
+    "server_config",
+    "user_config",
 ]
 
 MIDDLEWARE = [

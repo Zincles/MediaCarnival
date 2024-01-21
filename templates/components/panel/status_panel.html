@@ -7,32 +7,32 @@
   <div>
     <h1 class="text-2xl">{{TITLE|default:"TITLE"}}</h1>
     <p class="p-2">{{PARA|default:"PARA"}}</p>
+    <div id="nav-buttons-div" class="flex space-x-1">
+      <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'media_library:home' %}">主页</a>
+      <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'media_library:libraries' %}"
+      >媒体库</a
+      >
+      <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'file_browser:home' %}"
+      >文件管理器</a
+      >
+    </div>
   </div>
   
-  <div class="flex space-x-1">
-    <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'media_library:home' %}">主页</a>
-    <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'media_library:libraries' %}"
-      >媒体库</a
-    >
-    <a class="shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500" href="{% url 'file_browser:home' %}"
-      >文件管理器</a
-    >
-  </div>
   
   <!-- 设置按钮 -->
-  <div class="relative">
+  <div id="setting-button-div" class="relative">
     <button class="settings-button shadow rounded-lg p-3 bg-neutral-700 hover:bg-blue-500">
       <i class="fas fa-cog fa-lg"></i>
     </button>
     <div class="settings-dropdown absolute z-50 right-0 mt-2 w-48 bg-neutral-700 text-white shadow-2xl rounded-lg p-2">
-      <a href="/" class="block px-2 py-1  hover:bg-blue-500 rounded-lg hover:text-white">用户</a>
-      <a href="/" class="block px-2 py-1  hover:bg-blue-500 rounded-lg hover:text-white">设置</a>
+      <a href="/user_config" class="block px-2 py-1  hover:bg-blue-500 rounded-lg hover:text-white">用户</a>
+      <a href="/server_config" class="block px-2 py-1  hover:bg-blue-500 rounded-lg hover:text-white">设置</a>
       <a href="/" class="block px-2 py-1  hover:bg-blue-500 rounded-lg hover:text-white">主题</a>
 
       <!-- 添加更多的设置选项 -->
     </div>
   </div>
-
+  
   <!-- 处理设置按钮按下后，弹出的面板 -->
   <script>
     window.onload = function () {
