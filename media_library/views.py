@@ -33,9 +33,9 @@ def libraries(request):
     )
 
 
-def file_browser(request):
-    # 文件浏览器。
-    return render(request, "media_library/file_browser.html")
+# def file_browser(request):
+#     # 文件浏览器。
+#     return render(request, "media_library/file_browser.html")
 
 
 def library_inspector(request, library_id):

@@ -11,6 +11,8 @@
     <!-- 状态栏 -->
     {% include "components/panel/status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
 
-    <div>MEDIA LIBRARIES</div>
+    <div id="library-displayer">MEDIA LIBRARIES</div>
+
+    <script src="{% static 'media_library/libraries.js' %}"></script>
   </body>
 </html>
