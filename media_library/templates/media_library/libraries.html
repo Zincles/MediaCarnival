@@ -11,15 +11,6 @@
     <!-- 状态栏 -->
     {% include "components/panel/status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
 
-    <!-- 媒体库显示器，显示来自Python的输入 -->
-    <div>
-      {% for LIBRARY in LIBRARIES %}
-      <!-- -->
-      {% include "components/image_displayer/landscape_displayer.html" %}
-      <!-- -->
-      {% endfor %}
-    </div>
-
-    {% comment %} 显示库。遍历拥有的每个库。 {% endcomment %}
+    <div>MEDIA LIBRARIES</div>
   </body>
 </html>
