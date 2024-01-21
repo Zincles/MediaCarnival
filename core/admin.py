@@ -6,8 +6,12 @@ from django.contrib import admin
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from debug_settings import ACCESS_TOKEN
+from server_config.models import TmdbAccessToken
 
+
+def get_access_token():
+    return TmdbAccessToken.objects.first().value
+ACCESS_TOKEN = get_access_token()
 
 # 文件节点
 class FSNodeAdmin(admin.ModelAdmin):
