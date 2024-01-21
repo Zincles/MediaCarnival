@@ -10,5 +10,39 @@
   <body class="bg-neutral-900">
     <!-- 首页 -->
     {% include "components/panel/status_panel.html" with TITLE="用户设置" PARA="设置当前用户" %}
+
+    <form action="/submit" method="post" autocomplete="off" class="mx-auto m-16 max-w-xl">
+      <div class="p-4 m-2 text-white bg-neutral-800">
+        用户属性
+        <div class="m-4">
+          <label for="username" class="block text-white">用户名</label>
+          <input
+            autocomplete="off"
+            type="text"
+            id="username"
+            name="username"
+            value="1234"
+            readonly
+            class="w-full rounded-lg text-white bg-neutral-800" />
+        </div>
+      </div>
+
+      <div class="p-4 m-2 text-white bg-neutral-800">
+        文件浏览器属性
+        TODO
+        <div class="m-4">
+          <label for="file_browser_cols" class="block text-white">文件浏览器列数</label>
+          <input
+            autocomplete="off"
+            type="number"
+            name="file_browser_cols"
+            class="w-full rounded-lg text-white bg-neutral-800" />
+        </div>
+      </div>
+
+      <div>
+        <input type="submit" value="提交" class="p-4 m-2 text-white bg-neutral-800" />
+      </div>
+    </form>
   </body>
 </html>

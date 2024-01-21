@@ -38,6 +38,10 @@ class MediaLibrary(models.Model):
     # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个剧集)"
     structure_type = models.CharField(max_length=128, null=False, default="FLAT")
 
+    class Meta:
+        verbose_name = "媒体库"
+        verbose_name_plural = verbose_name
+
     def create_library(path, library_type="SHOWS", structure_type="FLAT"):
         """创建库."""
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
@@ -94,6 +98,10 @@ class MediaUnit(models.Model):
     metadata_tmdb_tv = ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit")
     metadata_tmdb_movie = ManyToManyField(to="TmdbMovieDetails", related_name="media_unit")
 
+    class Meta:
+        verbose_name = "媒体单位"
+        verbose_name_plural = verbose_name
+
     def get_basename(self):
         "获取文件夹名称."
         return os.path.basename(self.path)
@@ -116,6 +124,10 @@ class TmdbTvSeriesDetails(models.Model):
 
     updated_time = DateTimeField(null=False)  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "TMDB TV 系列 元数据"
+        verbose_name_plural = verbose_name
 
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
@@ -254,6 +266,10 @@ class TmdbTvSeasonDetails(models.Model):
     updated_time = DateTimeField()  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = "TMDB TV 季 元数据"
+        verbose_name_plural = verbose_name
+
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
         updated_time: datetime = self.updated_time
@@ -294,6 +310,10 @@ class TmdbTvEpisodeDetails(models.Model):
     updated_time = DateTimeField()  # 本地的数据的更新时间
     metadata = JSONField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = "TMDB TV 剧集 元数据"
+        verbose_name_plural = verbose_name
+
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
         updated_time: datetime = self.updated_time
@@ -330,6 +350,10 @@ class TmdbMovieDetails(models.Model):
     movie_id = IntegerField(null=False)
     updated_time = DateTimeField(null=False)
     metadata = JSONField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "TMDB Movie 元数据"
+        verbose_name_plural = verbose_name
 
     ## 更新元数据。与TV Series的方法相同
     def update(self, AUTH, tolerate_time=0):
@@ -372,6 +396,10 @@ class TmdbImageFile(models.Model):
     @staticmethod
     def get_image(image_path: str):
         pass
+
+    class Meta:
+        verbose_name = "TMDB图像文件"
+        verbose_name_plural = verbose_name
 
 
 # =================================== #
@@ -511,3 +539,7 @@ class FSNode(models.Model):
 
     def __str__(self):
         return str(self.path)
+
+    class Meta:
+        verbose_name = "文件节点"
+        verbose_name_plural = verbose_name

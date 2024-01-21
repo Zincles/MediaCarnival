@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 from server_config.models import TmdbAccessToken
 
 
-def get_access_token():
+# 获取TMDB Access Token
+def get_tmdb_access_token():
     return TmdbAccessToken.objects.first().value
-ACCESS_TOKEN = get_access_token()
+
 
 # 文件节点
 class FSNodeAdmin(admin.ModelAdmin):
@@ -75,12 +76,12 @@ class TmdbTvSeriesDetailsAdmin(admin.ModelAdmin):
     @admin.action(description="单独更新节点的元数据（300s）")
     def update(modeladmin, request, queryset):
         for i in queryset:
-            i.update(ACCESS_TOKEN, 300)
+            i.update(get_tmdb_access_token(), 300)
 
     @admin.action(description="深度更新节点的元数据（300s）")
     def deep_update(modeladmin, request, queryset):
         for i in queryset:
-            i.deep_update(AUTH=ACCESS_TOKEN, tolerate_time=300)
+            i.deep_update(AUTH=get_tmdb_access_token(), tolerate_time=300)
 
     actions = ["update", "deep_update"]
 
@@ -94,7 +95,7 @@ class TmdbTvSeasonDetailsAdmin(admin.ModelAdmin):
     @admin.action(description="单独更新节点的元数据（300s）")
     def update(modeladmin, request, queryset):
         for i in queryset:
-            i.update(ACCESS_TOKEN, 300)
+            i.update(get_tmdb_access_token(), 300)
 
     @admin.display(description="获取Metadata的预览")
     def _get_meta_preview(self, meta):
@@ -111,7 +112,7 @@ class TmdbTvEpisodeDetailsAdmin(admin.ModelAdmin):
     @admin.action(description="单独更新节点的元数据（300s）")
     def update(modeladmin, request, queryset):
         for i in queryset:
-            i.update(ACCESS_TOKEN, 300)
+            i.update(get_tmdb_access_token(), 300)
 
     @admin.display(description="获取Metadata的预览")
     def _get_meta_preview(self, meta):
