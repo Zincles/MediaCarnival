@@ -147,6 +147,8 @@
 
                 // 是文本且为FLOW,则考虑显示图像
                 if (isImage(name) && style == "flow") {
+                  card[0].setAttribute("target", "_blank");
+                  card[0].setAttribute("rel", "noreferrer noopener");
                   let api_url = "/file_browser/api/get_image" + path;
 
                   // 创建一个占位符

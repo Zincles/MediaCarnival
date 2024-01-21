@@ -1,4 +1,5 @@
 {% load static %}
+
 <!-- 用于检查文件 -->
 <!DOCTYPE html>
 <html>
@@ -16,7 +17,9 @@
     拓展名： {{extname}}
     </pre>
 
-    <div id="image-displayer" class="flex justify-center h-screen"></div>
+    <div id="image-displayer" class="flex justify-center h-screen w-full">
+      <img id="image" class="object-contain max-w-full, max-h-full, h-auto" />
+    </div>
 
     <script type="text/javascript">
       // 调用api,通过路径，获取图片
@@ -32,9 +35,9 @@
           responseType: "blob",
         },
         success: function (blob) {
-          var img = document.createElement("img");
+          let img = $("#image")[0];
           img.src = URL.createObjectURL(blob);
-          $("#image-displayer").append(img);
+          img.class = "object-contain max-w-full, max-h-full, h-auto";
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.error("Error:", textStatus, errorThrown);
