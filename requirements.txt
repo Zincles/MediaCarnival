@@ -4,3 +4,6 @@ psycopg
 opencv-python
 matplotlib
 Pillow
+pysubs2
+webvtt-py
+

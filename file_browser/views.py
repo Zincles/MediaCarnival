@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 import os
 import json
-
+from lib.extlib import get_file_type
 
 def file_browser(request, path=""):
     path = os.path.join("/", path)  # 待遍历文件夹
@@ -49,6 +49,6 @@ def file_inspector(request, path=""):
                 {
                     "path": path,
                     "name": os.path.basename(path),
-                    "extname": os.path.splitext(path)[1],
+                    "type":get_file_type(path),
                 },
             )
