@@ -1,6 +1,4 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'media_library/style.css' %}" />
-{% comment %} 节目浏览器。 {% endcomment %}
 
 <!DOCTYPE html>
 <html>
@@ -10,14 +8,6 @@
   </head>
 
   <body class="bg-neutral-900">
-    <h1>媒体库ID:{{ LIBRARY_ID}}</h1>
-    用于检索具体的节目剧集。<br />
-
-    ID = {{ LIBRARY_ID }} <br />
-    NAME = {{ LIBRARY_NAME }}<br />
-    TYPE = {{ LIBRARY_TYPE }}<br />
-    STRUCTURE = {{ LIBRARY_STRUCTURE }}<br />
-
     <!-- 显示一个媒体库对应的根目录里的所有文件夹。每个文件显示为文件夹。 下列目录可以被视为“媒体剧集” -->
     <!-- 一个媒体库可以保存多个节目， 一个节目里有多个视频文件。 一个节目对应一个文件夹。 -->
     <!-- 下列用于显示所有媒体文件夹。-->

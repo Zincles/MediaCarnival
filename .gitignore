@@ -1,9 +1,7 @@
 __pycache__/
 *.sqlite3
-venv/
 migrations
 tmp/*
-debug_settings.py
-debug.ipynb
-
-data/metadata
+data/
+venv/
+node_modules/

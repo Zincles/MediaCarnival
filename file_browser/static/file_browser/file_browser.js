@@ -7,6 +7,7 @@ var page_size = 50;
 var isLoading = false;
 
 var macyInstances = [];
+var endSplitters = [];
 
 // 判断文件是否为图片
 function isImage(filename) {
@@ -146,6 +147,32 @@ function asyncLoadFiles(style = "flow", column = 2) {
         });
         isLoading = false;
         recalcAllMacy();
+
+        // 最后添加一个分隔符，代表一段内容的加载完成。 先删除所有可能有的旧分隔符
+        endSplitters.forEach((splitter) => {
+          splitter.remove();
+        });
+        endSplitters = [];
+        let endSplitter = $(`<div class='item-center text-center text-white text-sm m-2'>
+                <div class="text-sm flow round-lg bg-neutral-800 rounded-lg p-1">第${
+                  page - 1
+                }页结束， / 共${total_pages}页。  </div>
+              </div>`);
+        if (data.is_end==false) {
+          let button = $(`<button class="btn btn-primary bg-neutral-700 rounded-sm">加载更多</button>`); // 为分隔符添加一个按钮，代表继续加载
+          button.click(() => {
+            asyncLoadFiles().then(recalcAllMacy);
+          });
+          endSplitter.children("div").append(button);
+        }
+        else{
+          endSplitter.children("div").append($(`<div>已经是最后一页</div>`));
+        }
+
+        $("#macy-containers").append(endSplitter);
+        endSplitters.push(endSplitter);
+
+        // 返回
         resolve();
         return;
       },

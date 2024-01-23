@@ -7,11 +7,11 @@
     {% include "head.html" %}
   </head>
 
-  <body class="bg-neutral-900">
+  <body class="bg-neutral-900 text-white">
     <!-- 状态栏 -->
-    {% include "components/panel/status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
+    {% include "status_panel.html" with TITLE="媒体库" PARA="Library 总览" %}
 
-    <div id="library-displayer">MEDIA LIBRARIES</div>
+    <div id="library-displayer" class="m-4 p-4">MEDIA LIBRARIES</div>
 
     <script src="{% static 'media_library/libraries.js' %}"></script>
   </body>

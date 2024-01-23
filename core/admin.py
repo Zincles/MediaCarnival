@@ -23,7 +23,8 @@ class FSNodeAdmin(admin.ModelAdmin):
         "path",
         "parent",
     ]
-    #    list_filter = ["parent"]
+    list_display_links = ["_get_basename", "id", "path", "parent"]
+    list_filter = ["parent"]
     search_fields = ["path"]
 
     @admin.display(description="文件名")

@@ -9,7 +9,7 @@
 
   <body class="bg-neutral-900">
     <!-- 顶部导航栏 -->
-    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=path %}
+    {% include "status_panel.html" with TITLE="文件管理器" PARA=path %}
 
     <!-- 容纳复数个MacyContainer. 每个macy-container都代表一个asyncLoadFiles()所创建的实例。 -->
     <div id="macy-containers" class="m-4"></div>

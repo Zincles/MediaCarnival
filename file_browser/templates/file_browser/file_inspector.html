@@ -10,24 +10,19 @@
   </head>
 
   <body class="bg-neutral-900">
-    {% include "components/panel/status_panel.html" with TITLE="文件管理器" PARA=name %}
+    {% include "status_panel.html" with TITLE="文件管理器" PARA=name %}
 
-    <!-- 图像显示器 -->
+    <div id="displayer">
+      <!-- 图像显示器 -->
+      <img id="image" class="justify-center h-screen w-full object-contain max-w-full max-h-full h-auto" />
 
-    <img id="image" class="flex justify-center h-screen w-full object-contain max-w-full max-h-full h-auto" />
+      <!-- 视频播放器 TODO 使用 OPlayer代替 -->
 
-    <!-- 视频播放器 -->
-    <video id="video" playsinline controls class="w-full h-screen object-contain">
+      <video id="video" playsinline controls class="object-cover h-screen w-full"></video>
 
-      {% comment %} <source src="/path/to/video.mp4" type="video/mp4" /> {% endcomment %}
-      
-
-    </video>
-
-    <!-- 音频播放器 -->
-    <audio id="audio" controls class="w-full object-contain max-h-full max-w-full"></audio>
-
-    <!-- 初始化plyr -->
+      <!-- 音频播放器 -->
+      <audio id="audio" controls class="w-full object-cover max-h-full max-w-full"></audio>
+    </div>
 
     <script>
       var path = "{{path}}";
