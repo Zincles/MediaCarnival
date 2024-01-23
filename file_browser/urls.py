@@ -9,5 +9,7 @@ urlpatterns = [
     path(route="browser/<path:path>", view=views.file_browser, name="file_browser"),
     path(route="api/get_image/<path:path>", view=apis.api_get_image, name="api_get_image"),
     path(route="api/get_folder/<path:path>", view=apis.api_get_folder, name="api_get_folder"),
+    path(route="api/get_video/<path:path>", view=apis.get_video, name="api_get_video"),
+    path(route="api/get_file_preview/<path:path>", view=apis.get_file_preview, name="api_get_file_preview"),
 ]
 

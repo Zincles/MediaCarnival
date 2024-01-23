@@ -5,6 +5,27 @@ import os
 import json
 
 
+## 获取文件的扩展名，不带点
+def _get_ext_no_dot(filename: str) -> str:
+    return os.path.splitext(filename)[1][1:]
+
+## 获取文件的类型.可包括路径
+def _get_file_type(filename: str) -> str:
+    ext_no_dot = _get_ext_no_dot(filename)
+    if ext_no_dot in ["jpg", "jpeg", "png", "gif", "webp", "svg"]:
+        return "image"
+    elif ext_no_dot in ["mp4", "mkv", "webm"]:
+        return "video"
+    elif ext_no_dot in ["mp3", "wav", "ogg"]:
+        return "audio"
+    elif ext_no_dot in ["txt", "md", "html", "css", "js", "py", "cpp", "c", "h", "java", "go", "php"]:
+        return "text"
+    elif ext_no_dot in ["pdf"]:
+        return "pdf"
+    else:
+        return "other"
+
+
 ## 获取文件夹下的所有文件与文件夹。可指定页数，每页的数量，排序方式，排序顺序
 def api_get_folder(request, path: str):
     # 获取查询参数
@@ -33,7 +54,8 @@ def api_get_folder(request, path: str):
         is_end = not paginator.page(page).has_next()
 
         paths = [os.path.join(path, name) for name in names]
-        types = ["folder" if os.path.isdir(path) else "file" for path in paths]
+        types = ["folder" if os.path.isdir(path) else _get_file_type(path) for path in paths]
+
 
         return HttpResponse(
             json.dumps(
@@ -89,3 +111,43 @@ def api_get_image(request, path: str):
                 return HttpResponse(f.read(), content_type="image/webp")
         case _:
             return Http404("Not a Image file, or image format not supported")
+
+## 不再使用，即将删除
+def get_video(request, path: str):
+    FILE_PATH = os.path.join("/", path) # 确保是绝对路径
+
+    # 检查FILE_PATH是否对应文件
+    if not os.path.isfile(FILE_PATH):
+        return HttpResponse("File not found at: <br>" + str(FILE_PATH))
+
+    match _get_file_type(FILE_PATH):
+        case "video":
+            with open(FILE_PATH, "rb") as f:
+                return FileResponse(open(FILE_PATH, "rb"))
+        case _:
+            with open(FILE_PATH, "rb") as f:
+                return FileResponse(open(FILE_PATH, "rb") )
+
+
+## 获取可预览文件的预览。视频，音频，文本，pdf，诸如此类
+def get_file_preview(request, path:str):
+    path = os.path.join("/", path)  # 确保是绝对路径
+
+    # 检查FILE_PATH是否对应文件
+    if not os.path.isfile(path):
+        return HttpResponse("File not found at: <br>" + str(path))
+    
+    # 根据文件类型，返回不同的响应
+    match _get_file_type(path):
+        case "video":
+            return FileResponse(open(path, "rb"))
+        case "audio":
+            return FileResponse(open(path, "rb"))
+        case "text":
+            return FileResponse(open(path, "rb"))
+        case "pdf":
+            return FileResponse(open(path, "rb"))
+        case "image":
+            return FileResponse(open(path, "rb"))
+        case _:
+            return HttpResponse("Preview not supported for this file type")

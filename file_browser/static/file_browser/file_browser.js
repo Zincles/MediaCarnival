@@ -61,7 +61,7 @@ function isPreviewable(filename) {
 // 读取文件。可设置为网格或流式样式。（grid, flow）
 // 流式样式高度不固定，网格样式各元素大小完全固定。
 
-function asyncLoadFiles(style = "flow", column = 4) {
+function asyncLoadFiles(style = "flow", column = 2) {
   return new Promise((resolve, reject) => {
     if (isLoading) {
       resolve();
