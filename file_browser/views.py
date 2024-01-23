@@ -13,33 +13,17 @@ def file_browser(request, path=""):
 
         name = os.path.basename(path)  # 所在目录的名称
 
-        # path是路径。 根据path路径下的文件创建两个字符串数组，字符串分别为path路径下所有子路径/文件的绝对路径
-        file_paths = [os.path.join(path, raw) for raw in raws if os.path.isfile(os.path.join(path, raw))]
-        file_names = [os.path.basename(file) for file in file_paths]
-
-        folder_paths = [os.path.join(path, raw) for raw in raws if os.path.isdir(os.path.join(path, raw))]
-        folder_names = [os.path.basename(folder) for folder in folder_paths]
-
-
-        # return HttpResponse(f"This is a Folder {path},<br> files: {files},<br> folders: {folders}")
         return render(
             request,
             "file_browser/file_browser.html",
             {
                 "path": path,
                 "name": name,
-                # "file_names": json.dumps(file_names),
-                # "file_paths": json.dumps(file_paths),
-                # "folder_names": json.dumps(folder_names),
-                # "folder_paths": json.dumps(folder_paths),
-
-                "preview_image" : True,
             },
         )
 
     elif os.path.isfile(path):
         return file_inspector(request, path)
-
     else:
         return HttpResponse("This is not a file or folder:" + str(path))
 

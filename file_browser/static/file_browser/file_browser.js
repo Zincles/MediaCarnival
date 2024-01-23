@@ -130,7 +130,7 @@ function asyncLoadFiles(style = "flow", column = 2) {
           if (isImage(name) && style == "flow") {
             card[0].setAttribute("target", "_blank");
             card[0].setAttribute("rel", "noreferrer noopener");
-            let api_url = "/file_browser/api/get_image" + path;
+            let api_url = "/file_browser/api/get_file_preview" + path;
 
             // 创建一个占位符
             let placeholder = $('<div class="w-full h-full bg-gray-200"></div>');
