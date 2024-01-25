@@ -15,6 +15,11 @@ audio.style.display = "none";
 var preview_api_url = "/file_browser/api/get_file_preview" + path;
 var subtitle_api_url = "/file_browser/api/get_subtitle" + path;
 
+
+// 将API返回的数据显示到页面上
+$("#preview_url")[0].href = preview_api_url;
+
+
 switch (type) {
   case "image":
     image.style.display = "block";

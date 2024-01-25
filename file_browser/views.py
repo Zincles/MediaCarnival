@@ -3,6 +3,22 @@ from django.shortcuts import render
 import os
 import json
 from lib.extlib import get_file_type
+import json
+
+
+def home(request):
+    if request.user.is_anonymous:
+        return render(request, "file_browser/home.html")
+    else:
+        favorate_paths :dict= request.user.user_config.favorite_paths
+        return render(
+            request,
+            "file_browser/home.html",
+            {
+                "favorate_paths": (favorate_paths)
+            },
+        )
+
 
 def file_browser(request, path=""):
     path = os.path.join("/", path)  # 待遍历文件夹
@@ -19,6 +35,7 @@ def file_browser(request, path=""):
             {
                 "path": path,
                 "name": name,
+                "display_column": request.user.user_config.file_browser_cols if not request.user.is_anonymous else 4,
             },
         )
 
@@ -49,6 +66,6 @@ def file_inspector(request, path=""):
                 {
                     "path": path,
                     "name": os.path.basename(path),
-                    "type":get_file_type(path),
+                    "type": get_file_type(path),
                 },
             )

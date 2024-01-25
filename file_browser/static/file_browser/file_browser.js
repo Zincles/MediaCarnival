@@ -9,6 +9,11 @@ var isLoading = false;
 var macyInstances = [];
 var endSplitters = [];
 
+// 默认为4列，但可以在html中定义
+if (display_column == undefined) {
+  var display_column = 4;
+}
+
 // 判断文件是否为图片
 function isImage(filename) {
   var extension = filename.split(".").pop().toLowerCase();
@@ -62,7 +67,7 @@ function isPreviewable(filename) {
 // 读取文件。可设置为网格或流式样式。（grid, flow）
 // 流式样式高度不固定，网格样式各元素大小完全固定。
 
-function asyncLoadFiles(style = "flow", column = 2) {
+function asyncLoadFiles(style = "flow", column = display_column) {
   return new Promise((resolve, reject) => {
     if (isLoading) {
       resolve();
@@ -158,14 +163,13 @@ function asyncLoadFiles(style = "flow", column = 2) {
                   page - 1
                 }页结束， / 共${total_pages}页。  </div>
               </div>`);
-        if (data.is_end==false) {
+        if (data.is_end == false) {
           let button = $(`<button class="btn btn-primary bg-neutral-700 rounded-sm">加载更多</button>`); // 为分隔符添加一个按钮，代表继续加载
           button.click(() => {
             asyncLoadFiles().then(recalcAllMacy);
           });
           endSplitter.children("div").append(button);
-        }
-        else{
+        } else {
           endSplitter.children("div").append($(`<div>已经是最后一页</div>`));
         }
 

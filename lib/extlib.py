@@ -13,7 +13,7 @@ def get_file_type(filename: str) -> str:
         return "video"
     elif ext_no_dot in ["mp3", "wav", "ogg", "flac"]:
         return "audio"
-    elif ext_no_dot in ["txt", "md", "html", "css", "js", "py", "cpp", "c", "h", "java", "go", "php"]:
+    elif ext_no_dot in ["txt", "md", "html", "css", "js", "py", "cpp", "c", "h", "java", "go", "php", "ass", "vtt", "srt"]:
         return "text"
     elif ext_no_dot in ["pdf"]:
         return "pdf"

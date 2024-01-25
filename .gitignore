@@ -5,3 +5,4 @@ tmp/*
 data/
 venv/
 node_modules/
+test.ipynb

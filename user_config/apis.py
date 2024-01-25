@@ -1,15 +1,11 @@
-def api_get_user_info(request):
-    """获取用户信息"""
-    username = request.GET.get("username")  # str
-    # TODO 从数据库中获取用户信息
+import json
+from django.http import HttpResponse
+from user_config.models import UserConfig
 
 
-def api_update_user_info(request):
-    """更新用户信息"""
-    changes = request.POST.get("changes")  # json
-    # TODO 更新数据库中的用户信息
-
-
-def api_get_user_list(request):
-    """获取用户列表"""
-    # TODO 从数据库中获取用户列表
+## 获取用户的当前配置
+def get_user_config(request):
+    
+    # 获取当前用户的配置
+    user_config :UserConfig = request.user.user_config
+    return HttpResponse(json.dumps(user_config.__dict__))

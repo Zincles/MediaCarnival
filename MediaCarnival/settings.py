@@ -146,3 +146,7 @@ CACHES = {
 
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 STATIC_ROOT = "tmp/collectstatic_root"
+
+
+
+MEDIA_ROOT = MEDIA_ROOT = os.path.join(BASE_DIR, 'data/media')

@@ -1,10 +1,10 @@
 from django.http import Http404, HttpResponse, FileResponse
 from django.shortcuts import render
 from django.core.paginator import Paginator
+from file_browser.models import Thumbnail
 from lib import extlib
 import os
 import json
-
 
 
 ## 获取文件夹下的所有文件与文件夹。可指定页数，每页的数量，排序方式，排序顺序
@@ -62,11 +62,15 @@ def api_get_folder(request, path: str):
 import pysubs2
 import webvtt
 from datetime import timedelta
+
+
 def ms_to_timestamp(ms):
     seconds, milliseconds = divmod(ms, 1000)
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}"
+
+
 def convert_ass_to_vtt(ass_path):
     subs = pysubs2.load(ass_path, encoding="utf-8")
     vtt = webvtt.WebVTT()
@@ -76,21 +80,24 @@ def convert_ass_to_vtt(ass_path):
         text = sub.text.replace("\\N", "\n")
         vtt.captions.append(webvtt.Caption(start, end, text))
     return str(vtt)
+
+
 ## TODO 字幕转换功能仍然是坏的，需要修复。FIXME
 ## 引入的两个库：pysubs2 webvtt-py， 有可能有问题。
 ## 字幕的可用性并不高，需要完善。
-def get_subtitle(request, video_path: str): 
+def get_subtitle(request, video_path: str):
     video_path = os.path.join("/", video_path)
     base_path = os.path.splitext(video_path)[0]
-    subtitle_path = base_path + '.vtt'
-    ass_subtitle_path = base_path + '.ass'
+    subtitle_path = base_path + ".vtt"
+    ass_subtitle_path = base_path + ".ass"
     if os.path.isfile(subtitle_path):
-        return FileResponse(open(subtitle_path, 'rb'), content_type='text/vtt')
+        return FileResponse(open(subtitle_path, "rb"), content_type="text/vtt")
     elif os.path.isfile(ass_subtitle_path):
         vtt_data = convert_ass_to_vtt(ass_subtitle_path)
-        return HttpResponse(vtt_data, content_type='text/vtt')
+        return HttpResponse(vtt_data, content_type="text/vtt")
     else:
         return HttpResponse(f"Subtitle file not found:{video_path}", status=404)
+
 
 ## TODO
 def get_vtt_subtitle():
@@ -105,27 +112,51 @@ def get_file_preview(request, path: str):
     if not os.path.isfile(path):
         return HttpResponse("File not found at: <br>" + str(path))
 
+    ext = extlib.get_ext_no_dot(path)
+
     # 根据文件类型，返回不同的响应
     match extlib.get_file_type(path):
         case "video":
-            response = FileResponse(open(path, "rb"))
+            response = FileResponse(open(path, "rb"), content_type=f"video/{ext}")
             response["Accept-Ranges"] = "bytes"
             return response
         case "audio":
-            response = FileResponse(open(path, "rb"))
+            response = FileResponse(open(path, "rb"), content_type=f"audio/{ext}")
             response["Accept-Ranges"] = "bytes"
             return response
         case "text":
-            response = FileResponse(open(path, "rb"))
+            response = FileResponse(open(path, "rb"), content_type=f"text/{ext}")
             response["Accept-Ranges"] = "bytes"
             return response
         case "pdf":
-            response = FileResponse(open(path, "rb"))
+            response = FileResponse(open(path, "rb"), content_type="application/pdf")
             response["Accept-Ranges"] = "bytes"
             return response
         case "image":
-            response = FileResponse(open(path, "rb"))
+            response = FileResponse(open(path, "rb"), content_type=f"image/{ext}")
             response["Accept-Ranges"] = "bytes"
             return response
         case _:
             return HttpResponse("Preview not supported for this file type")
+
+
+##  TODO 获取文件缩略图。如果缩略图不存在，则创建缩略图。
+## 对图像来说，直接返回自身；对视频而言，会尝试创建。
+## def get_file_thumb(request, path: str):
+    # path = os.path.join("/", path) 
+    # if not os.path.isfile(path):
+    #     return HttpResponse("File not found at: <br>" + str(path))
+    # ext = extlib.get_ext_no_dot(path)
+
+    # # 根据文件类型，返回不同的响应
+    # match extlib.get_file_type(path):
+    #     case "video":
+    #         response = FileResponse(open(path, "rb"), content_type=f"video/{ext}")
+    #         response["Accept-Ranges"] = "bytes"
+    #         return response
+    #     case "image":
+    #         response = FileResponse(open(path, "rb"), content_type=f"image/{ext}")
+    #         response["Accept-Ranges"] = "bytes"
+    #         return response
+    #     case _:
+    #         return HttpResponse("Thumb not supported for this file type")

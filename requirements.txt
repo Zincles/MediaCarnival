@@ -6,4 +6,4 @@ matplotlib
 Pillow
 pysubs2
 webvtt-py
-
+moviepy

@@ -12,7 +12,12 @@
   <body class="bg-neutral-900">
     {% include "status_panel.html" with TITLE="文件管理器" PARA=name %}
 
-    <div id="displayer">
+    <div id="preview_panel" class="p-2 m-2">
+      <a id="preview_url" class="p-1 rounded-lg text-white bg-neutral-700 hover:text-blue-500">外部链接打开</a>
+    </div>
+    
+    <div id="displayer" class="m-4 p-4 bg-neutral-800 rounded-lg">
+
       <!-- 图像显示器 -->
       <img id="image" class="justify-center h-screen w-full object-contain max-w-full max-h-full h-auto" />
 
