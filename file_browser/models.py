@@ -7,6 +7,7 @@ from django.core.files import File
 import tempfile
 from datetime import datetime
 from django.utils import timezone
+
 # Create your models here.
 
 
@@ -39,28 +40,45 @@ class Thumbnail(models.Model):
         # 比较创建时间与更新时间是否相同
         return file_created_at == self.file_created_at and file_updated_at == self.file_updated_at
 
-
     # 缩略图是否存在？存在时可用。
     def thumbnail_exists(self):
         return self.thumbnail and self.file_created_at and self.file_updated_at and os.path.exists(self.thumbnail.path)
 
-    # 获取并更新缩略图。如果文件不存在了，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除缩略图。
-    # 这是针对远程挂载的文件系统的优化，因为远程挂载的文件系统可能会在一段时间后不可用。
-    # 该函数不进行原缩略图的可用性检验。无论存在与否都会覆盖。
+    # 获取并更新缩略图。（覆盖）
+    # 如果文件不存在了，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除模型。
     def update_thumbnail(self):
-        clip = VideoFileClip(self.path)
-        time = clip.duration / 2  # 获取视频的中间帧作为缩略图
+        # 如果文件不存在，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除模型。
+        if not os.path.exists(self.path):
+            print("缩略图不存在")
+            if self.thumbnail_exists() and abs(timezone.now() - self.file_updated_at) > self.cache_time:
+                print("\t缩略图已经过期，删除之模型。")
+                self.delete()
+                return
+            print("\t缩略图未过期，不删除模型。")
+            return
 
-        # 在系统的临时目录中创建临时文件
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
-            thumbnail_path = f.name
+        # 若存在，则更新缩略图。
+        try:
+            clip = VideoFileClip(self.path)
+            time = clip.duration / 2  # 获取视频的中间帧作为缩略图
 
-        clip.save_frame(thumbnail_path, t=time)
+            # 在系统的临时目录中创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+                thumbnail_path = f.name
 
-        # 打开缩略图文件并保存到模型中
-        with open(thumbnail_path, "rb") as f:
-            self.thumbnail.save(thumbnail_path, File(f), save=True)
-            os.remove(thumbnail_path)
+            clip.save_frame(thumbnail_path, t=time)
+
+            # 打开缩略图文件并保存到模型中
+            with open(thumbnail_path, "rb") as f:
+                self.thumbnail.save(thumbnail_path, File(f), save=True)
+                os.remove(thumbnail_path)
+        except Exception as e:
+            print("更新缩略图遇到异常： ", e)
 
     def __str__(self):
         return f"[Thumb for {os.path.basename(self.path)}]"
+
+    # 删除时，确保缩略图文件也被删除。
+    def delete(self, *args, **kwargs):
+        self.thumbnail.delete()
+        super().delete(*args, **kwargs)

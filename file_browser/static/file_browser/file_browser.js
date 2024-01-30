@@ -11,13 +11,18 @@ var endSplitters = [];
 
 // 默认为4列，但可以在html中定义
 if (display_column == undefined) {
-  var display_column = 4;
+  var display_column = 3;
 }
 
 // 判断文件是否为图片
 function isImage(filename) {
   var extension = filename.split(".").pop().toLowerCase();
   return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension);
+}
+
+function isVideo(filename) {
+  var extension = filename.split(".").pop().toLowerCase();
+  return ["mp4", "avi", "mkv"].includes(extension);
 }
 
 function recalcAllMacy() {
@@ -61,7 +66,7 @@ function getIcon(filename, is_folder = false) {
 
 // 判断文件是否可以预览
 function isPreviewable(filename) {
-  return isImage(filename);
+  return isImage(filename) || isVideo(filename);
 }
 
 // 读取文件。可设置为网格或流式样式。（grid, flow）
@@ -148,6 +153,24 @@ function asyncLoadFiles(style = "flow", column = display_column) {
               placeholder.replaceWith(preview);
               macyInstance.recalculate(true);
             });
+          }
+          // 是视频且为FLOW,则考虑显示视频
+          else if (isVideo(name) && style == "flow") {
+            card[0].setAttribute("target", "_blank");
+            card[0].setAttribute("rel", "noreferrer noopener");
+            let api_url = "/file_browser/api/get_file_preview" + path;
+
+            // 创建一个占位符
+            let placeholder = $('<div class="w-full h-full bg-gray-200"></div>');
+            card.append(placeholder);
+
+            // 创建视频元素，但不立即添加到 DOM 中. 当图像加载完成后，替换占位符
+            let preview = $(`<video src="${api_url}"  preload="metadata" class="w-full h-full object-cover" controls></video>`)[0];
+            preview.addEventListener("loadeddata", function () {
+              placeholder.replaceWith(preview);
+              macyInstance.recalculate(true);
+            });
+
           }
         });
         isLoading = false;

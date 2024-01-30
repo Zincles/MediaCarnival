@@ -10,4 +10,11 @@ class ThumbnailAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
+    # 覆写管理员面板的删除方法，使其能够删除缩略图文件。
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            obj.delete()
+
+
+
 admin.site.register(Thumbnail, ThumbnailAdmin)

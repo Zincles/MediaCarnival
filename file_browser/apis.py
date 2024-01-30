@@ -12,8 +12,9 @@ def api_get_folder(request, path: str):
     # 获取查询参数
     page: int = request.GET.get("page", 1)
     page_size: int = request.GET.get("page_size", 100)
-    sort = request.GET.get("sort", "name")
+    sort = request.GET.get("sort", "time")
     order = request.GET.get("order", "asc")
+
 
     path: str = os.path.join("/", path)  # 待遍历文件夹
     name: str = os.path.basename(path)  # 所在目录的名称
@@ -21,8 +22,21 @@ def api_get_folder(request, path: str):
     if os.path.isdir(path):
         # 处理names， 对names排序，按A-Z, a-z的顺序，文件夹在先，文件在后
         _names = os.listdir(path)
-        _names.sort(key=lambda x: x.lower())
-        _names.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
+
+        match sort:
+            case "name":
+                _names.sort(key=lambda x: x.lower())
+                _names.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
+            case "time":
+                _names.sort(key=lambda x: os.path.getmtime(os.path.join(path, x)), reverse=True)
+                _names.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
+            case _:
+                _names.sort(key=lambda x: x.lower())
+                
+
+
+
+
 
         # 分页. 从第page页开始，每页page_size个。
         paginator = Paginator(_names, page_size)
