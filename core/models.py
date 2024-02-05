@@ -4,7 +4,7 @@ from requests import Response
 from os.path import isdir
 from lib import hash
 from django.db import models
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import (
     CharField,
     BooleanField,
@@ -32,10 +32,10 @@ class MediaLibrary(models.Model):
     library_name = models.CharField(max_length=128, null=False)  # 媒体库的，显示在用户面前的名称
     root_nodes = models.ManyToManyField("FSNode")  # 媒体库的根节点们
 
-    # 可能的类型： SHOWS FILMS IMAGES MUSICS BOOKS FILES
-    library_type = models.CharField(max_length=128, null=False, default="SHOWS")
+    # 可能的类型： TV FILMS IMAGES MUSICS BOOKS FILES
+    library_type = models.CharField(max_length=128, null=False, default="TV")
 
-    # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个剧集)"
+    # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个Series)"
     structure_type = models.CharField(max_length=128, null=False, default="FLAT")
 
     class Meta:
@@ -47,18 +47,22 @@ class MediaLibrary(models.Model):
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
         return MediaLibrary(root_node=node, library_type=library_type, structure_type=structure_type)
 
-    def scan_library(self, type="FLAT"):
-        """扫描库。方便起见直接调用FSNode的方法。"""
+    def update_root_nodes(self):
+        """对每个根节点执行递归扫描"""
+        for node in self.root_nodes.all():
+            node.update_recursively()
+
+    def rescan_library(self, scan_type="FLAT"):
+        """重扫描库。通过FSNode与文件系统通信。"""
         try:
-            # 首先清除现有的节点们
+            # 清除现有的Units
             for unit in self.unit.all():
                 unit.delete()
 
-            # 然后根据预设的扫描类型进行行动
-            match type:
+            # 根据预设进行行动
+            match scan_type:
                 case "FLAT":  # 标注模式
                     for root_node in self.root_nodes.all():  # 遍历根节点们
-                        pass
                         # 获取所有文件节点(非目录)。平放到一个数组里。
                         folder_nodes = {node for node in root_node.get_children() if node.is_directory()}
 
@@ -71,6 +75,7 @@ class MediaLibrary(models.Model):
                     raise Exception("指定了错误的媒体库扫描类型！")
         except Exception as e:
             print("扫描库中遇到错误：", e)
+            raise e
 
     def __str__(self) -> str:
         return "[媒体库：" + self.library_name + "]"
@@ -78,25 +83,22 @@ class MediaLibrary(models.Model):
 
 class MediaUnit(models.Model):
     """
-    媒体单位的元数据.
-    一部剧, 一张保存在文件夹里的专辑, 一堆存在一个文件夹里的图片, 都可以被分别视为一个'MediaUnit'.
-    MediaUnit是分类聚集的最小单位. 粒度再小一点,就是FSNode了. 用MediaUnit可以区分不同的聚集.
-    单独的剧集/文件被视为文件。
-    另外,从IMDB进行刮削, MediaUnit也是最小单位.
-    MediaUnit一定属于某个MediaLibrary.
+    媒体单位。只能由MediaLibrary创建。单位是“SERIES / MOVIE”
+    必须指定Library, 且必须由Library创建。必须指向一个FSNode。
     """
 
-    # 每个媒体也一定依附于一个MediaLibrary和FSNode. 一个 FSNode与一个Library共同确定了一个媒体。
-    # 例如，一部动漫的所有内容一定都在同一目录（或者在目录的子目录里，反正能在一个路径下递归搜索到所有）
-    # 如果文件夹没了，动漫当然也不复存在；媒体库没了，情况也一样。
     library = models.ForeignKey(to="MediaLibrary", on_delete=models.CASCADE, null=False, related_name="unit")
     fsnode = models.ForeignKey(to="FSNode", on_delete=models.CASCADE, null=False)
 
-    nickname = models.CharField(max_length=512)  # 自定义别名. 由用户手动指定
+    tmdb_id = models.IntegerField(null=True, blank=True)  # tmdb ID
+    unit_type = models.CharField(max_length=64, null=False, default="TV")
+    # "TV" "FILMS" "IMAGES" "MUSICS" "BOOKS" "FILES"
 
-    # TV剧集元数据。
-    metadata_tmdb_tv = ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit")
-    metadata_tmdb_movie = ManyToManyField(to="TmdbMovieDetails", related_name="media_unit")
+    nickname = models.CharField(max_length=512, null=True, blank=True)  # 自定义别名. 由用户手动指定
+
+    # TV剧集元数据。一个媒体Unit在创建时，必须指定其指向的位置，与类型。
+    metadata_tmdb_tv = ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit", blank=True)
+    metadata_tmdb_movie = ManyToManyField(to="TmdbMovieDetails", related_name="media_unit", blank=True)
 
     class Meta:
         verbose_name = "媒体单位"
@@ -104,10 +106,33 @@ class MediaUnit(models.Model):
 
     def get_basename(self):
         "获取文件夹名称."
-        return os.path.basename(self.path)
+        return os.path.basename(self.fsnode.get_basename())
 
     def __str__(self) -> str:
         return "[MediaUnit: " + self.fsnode.path + "]"
+
+    def update_tmdb_id_by_folder_name(self, AUTH):
+        """根据文件夹名称,查询并更新tmdb_id。需要API key. 遇到错误则抛出。"""
+        try:
+            match self.unit_type:
+                case "TV":
+                    id = tmdb_api.get_tv_id_by_name(AUTH, self.get_basename())
+                    self.tmdb_id = id
+                    self.save()
+                    print(f"类型为TV, 文件夹名为{self.get_basename()}, ID为{id}")
+
+                case "MOVIE":
+                    id = tmdb_api.get_movie_id_by_name(AUTH, self.get_basename())
+                    self.tmdb_id = id
+                    self.save()
+                    print(f"类型为MOVIE, 文件夹名为{self.get_basename()}, ID为{id}")
+
+                case _:
+                    raise Exception(f"错误的媒体类型！: {self.unit_type}不受支持！")
+
+        except Exception as e:
+            print("更新tmdb_id时遇到错误:", e)
+            raise e
 
 
 # ============================== #
@@ -128,6 +153,23 @@ class TmdbTvSeriesDetails(models.Model):
     class Meta:
         verbose_name = "TMDB TV 系列 元数据"
         verbose_name_plural = verbose_name
+
+    # TEST
+    def get_or_create_or_update(self, AUTH, tolerate_time=0):
+        """获取或创建或更新一个Series的元数据。"""
+        series_id = self.series_id
+        try:
+            existed = TmdbTvSeriesDetails.objects.get(series_id=series_id)
+            existed.update(AUTH, tolerate_time)  # 尝试更新
+            return existed
+        except TmdbTvSeriesDetails.DoesNotExist:  # 本地没有元数据，创建之
+            new = TmdbTvSeriesDetails(series_id=series_id)
+            new.save()
+            new.update(AUTH, tolerate_time)
+            return new
+        except Exception as e:
+            print("get_or_create_or_update()::遇到错误:", e)
+            return
 
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
@@ -190,7 +232,8 @@ class TmdbTvSeriesDetails(models.Model):
                 for season_dict in self.metadata["seasons"]:
                     season_num = int(season_dict["season_number"])  # 每个剧集的剧集ID
 
-                    if not season_num in existed_season_meta_nums:  # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
+                    if not season_num in existed_season_meta_nums:
+                        # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
                         season_meta = TmdbTvSeasonDetails(
                             series_id=self.series_id, season_number=season_num, updated_time=current_time
                         )
@@ -224,7 +267,8 @@ class TmdbTvSeriesDetails(models.Model):
                         season_num = int(episode_dict["season_number"])  # 每个剧集的剧集ID
                         episode_num = int(episode_dict["episode_number"])
 
-                        if not episode_num in existed_episode_meta_nums:  # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
+                        if not episode_num in existed_episode_meta_nums:
+                            # 如果找到了缺失元数据的季，则创建节点并添加之，然后更新。
                             episode_meta = TmdbTvEpisodeDetails(
                                 series_id=self.series_id,
                                 season_number=season_num,
@@ -418,17 +462,20 @@ class FSNode(models.Model):
 
     HASH_METHOD = "md5"  # "sha256"
 
-    parent = models.ForeignKey(to="self", on_delete=models.CASCADE, null=True, blank=True, related_name="child")  # 父节点
+    parent = models.ForeignKey(to="self", on_delete=models.CASCADE, null=True, blank=True, related_name="child")
     path = models.CharField(max_length=512)  # 所指向的绝对路径
 
     # 文件元数据. 非实时, 需手动更新.
     meta_size = models.BigIntegerField(null=True, blank=True)
     meta_hash = models.CharField(max_length=512, null=True, blank=True)
-    meta_last_modified_time = models.DateTimeField(null=True, blank=True)
-    meta_last_created_time = models.DateTimeField(null=True, blank=True)
+    meta_last_modified_time = models.DateTimeField(null=True, blank=True, auto_now=True)
+    meta_last_created_time = models.DateTimeField(null=True, blank=True, auto_now_add=True)
 
     # 获取文件的BaseName
     def get_path_basename(self):
+        return os.path.basename(self.path)
+
+    def get_basename(self):
         return os.path.basename(self.path)
 
     # 是否是目录？
@@ -437,6 +484,10 @@ class FSNode(models.Model):
 
     def is_file(self):
         return os.path.isfile(self.path)
+
+    # 是否可用？
+    def is_accessible(self):
+        return os.access(self.path, os.R_OK)
 
     # UNTESTED
     def get_child(self, child_name: str):
@@ -450,9 +501,7 @@ class FSNode(models.Model):
         if deep == False:
             return set(self.child.all())
         else:
-            # 返回当前节点的所有子节点的get_children()
-            # 也就是当前所有子节点get_children的union
-            # 如果是末端节点,那么get_children应该是empty
+            # 返回当前节点的所有子节点的get_children()的并集
             if not os.path.isdir(self.path):
                 return set([])
             result = set(self.child.all())
@@ -460,6 +509,10 @@ class FSNode(models.Model):
             for child_node in result:  # 遍历当前子节点:
                 result = result.union(child_node.get_children(deep=True))
             return result
+
+    def get_parent_id(self):
+        """获取父节点的ID. 如果没有父节点,则返回None. TEST"""
+        return self.parent.id if not self.parent is None else None
 
     def get_untracked_basenames(self):
         """获取未被追踪的文件的名称(basename)"""
@@ -475,14 +528,34 @@ class FSNode(models.Model):
         lost_track = children_names - filenames_in_path
         return {self.get_child(i) for i in lost_track}
 
+    def delete_if_unaccessible(self):
+        """如果自己不可访问,则删除自己 TEST"""
+        if not self.is_accessible():
+            self.delete()
+
+    def delete_all_children(self):
+        """删除所有子节点 TEST"""
+        for child in self.get_children():
+            child.delete()
+
+    def delete_unaccessible_children(self):
+        """删除不可访问的子节点 TEST"""
+        for child in self.get_children():
+            if not child.is_accessible():
+                child.delete()
+
+    def update_hash(self):
+        """更新文件的哈希值"""
+        self.meta_hash = hash.get_file_hash(self.path, method=self.HASH_METHOD)
+
     def update_recursively(self, ttl: int = 10) -> None:
         """递归更新文件映射树."""
         if ttl <= 0:  # 确保自己没有抵达最大深度
-            print("\t[WARN]抵达最大深度! 退出....")
-            return
-        elif not os.path.isdir(self.path):  # 确保自己是目录.
-            # print("\t节点不可以被遍历，返回...", self)
-            return
+            raise Exception("抵达最大深度")
+        if not os.path.isdir(self.path):  # 确保自己是目录.
+            raise Exception("节点不可以被遍历")
+        if not self.is_accessible():  # 确保自己是可访问的.
+            raise Exception("节点不可访问")
 
         try:
             # 为未追踪的路径创建节点

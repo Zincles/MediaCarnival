@@ -1,7 +1,6 @@
 # Media Carnival
 
-一个基于 python django 编写的媒体库。功能残缺，尚处于开发中 <br>
-名称源于 Emby 的某个第三方修改版本。<br>
+一个基于 python django 编写的媒体库。名称源于 Emby 的某个第三方修改版本。<br>
 它仍缺少基本的作为媒体库的功能，离完成还需要不少功夫。<br>
 
 ## 功能？
@@ -20,12 +19,16 @@ Media Carnival 是作为 Emby 的仿制品开发的，所以功能大概和它�
 
 和一般的 Django 应用程序一样，在安装了`requirements.txt`里的 python 依赖后，使用: <br>
 
-> python manage.py makemigrations
-> python manage.py migrate
-> 初始化迁并移数据库，然后: <br>
-> python manage.py run
-> 以运行该工程。<br>
-> 请不要对奇怪的 requirements 产生疑惑，我会正式版本会尝试精简的。 <br>
+初始化迁并移数据库: <br>
+
+> python manage.py makemigrations <br>
+> python manage.py migrate <br>
+
+运行工程 <br>
+
+> python manage.py run <br>
+
+请不要对奇怪的 requirements 产生疑惑，我会正式版本会尝试精简的。 <br>
 
 ## 外部库？
 

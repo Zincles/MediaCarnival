@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from traitlets import default
 import os
 
 class UserConfig(models.Model):

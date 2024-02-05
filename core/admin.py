@@ -1,7 +1,7 @@
 from django.contrib import admin
 from core.models import FSNode, MediaLibrary, MediaUnit
 from core.models import TmdbTvSeriesDetails, TmdbTvSeasonDetails, TmdbTvEpisodeDetails, TmdbMovieDetails
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -16,15 +16,13 @@ def get_tmdb_access_token():
 
 # 文件节点
 class FSNodeAdmin(admin.ModelAdmin):
-    list_display = [
+    list_display = ["_get_basename", "is_accessible", "_get_filetype", "id", "path", "parent_id"]
+    list_display_links = [
         "_get_basename",
-        "_get_filetype",
         "id",
         "path",
-        "parent",
     ]
-    list_display_links = ["_get_basename", "id", "path", "parent"]
-    list_filter = ["parent"]
+    # list_filter = ["parent"]
     search_fields = ["path"]
 
     @admin.display(description="文件名")
@@ -41,10 +39,18 @@ class FSNodeAdmin(admin.ModelAdmin):
     @admin.action(description="对该节点进行递归更新。")
     def update_recursively(modeladmin, request, queryset):
         for i in queryset:
-            i.update_recursively()
-        # queryset.update(status="p")
+            try:
+                i.update_recursively()
+                messages.success(request, f"已对节点 {i} 进行递归更新。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 更新失败。原因：{e}")
 
-    actions = [update_recursively]
+    @admin.action(description="删除无效节点")
+    def delete_invalid_nodes(modeladmin, request, queryset):
+        for i in queryset:
+            i.delete_if_unaccessible()
+
+    actions = [update_recursively, delete_invalid_nodes]
 
 
 # 库节点
@@ -58,18 +64,72 @@ class MediaLibraryAdmin(admin.ModelAdmin):
         num = len(nodes)
         return str(num)
 
-    @admin.action(description="扫描库")
-    def scan_library(modeladmin, request, queryset):
+    @admin.action(description="重新扫描所有库")
+    def rescan_library(modeladmin, request, queryset):
         for i in queryset:
-            i.scan_library()
+            try:
+                i.rescan_library()
+                messages.success(request, f"已对库 {i} 进行扫描。")
+            except Exception as e:
+                messages.error(request, f"库 {i} 扫描失败。原因：{e}")
 
-    actions = [scan_library]
+    @admin.action(description="更新所有根节点，然后重新扫描")
+    def update_nodes_then_rescan_library(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.update_root_nodes()
+                messages.success(request, f"已对库 {i} 进行根节点更新。")
+
+                i.rescan_library()
+                messages.success(request, f"已对库 {i} 进行扫描。")
+
+            except Exception as e:
+                messages.error(request, f"库 {i} 根节点更新失败。原因：{e}")
+            finally:
+                pass
+
+    actions = [rescan_library, update_nodes_then_rescan_library]
 
 
 # 媒体单元
 class MediaUnitAdmin(admin.ModelAdmin):
-    list_display = ["library", "fsnode", "nickname"]
+    list_display = [
+        "get_basename",
+        "unit_type",
+        "tmdb_id",
+        "library",
+        "fsnode",
+        "nickname",
+        "_get_tmdb_metadata_status",
+    ]
     filter_horizontal = ("metadata_tmdb_tv", "metadata_tmdb_movie")
+
+    @admin.display(description="TMDB元数据状况")
+    def _get_tmdb_metadata_status(self, unit):
+        if unit.metadata_tmdb_tv.exists() or unit.metadata_tmdb_movie.exists():
+            return "已获取"
+        else:
+            return "未获取"
+
+    @admin.action(description="根据文件夹名称，查询TMDB ID")
+    def _update_tmdb_id_by_basename(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.update_tmdb_id_by_folder_name(get_tmdb_access_token())
+                messages.success(request, f"已对Unit {i} 更新了ID: {i.tmdb_id}。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 更新ID失败。原因：{e}")
+
+    @admin.action(description="根据已有ID和类型，获取Series元数据并附加")
+    def _update_tmdb_metadata_by_id(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.update_tmdb_metadata_by_id(get_tmdb_access_token())
+                messages.success(request, f"已对Unit {i} 更新了元数据。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 更新元数据失败。原因：{e}")
+
+    actions = [_update_tmdb_id_by_basename]
 
 
 # TMDB Series

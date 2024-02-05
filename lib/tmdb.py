@@ -1,6 +1,7 @@
 from urllib.parse import quote
 from requests import Response
 import requests
+import httpx
 
 ## TODO 编写用于进行查询的实例。 以下调用API的代码是底层的。
 ## 这代表它们相当不完善，甚至没有异常处理，这意味着它们只能被包装在其他更完善的类里，而不是直接用于业务逻辑。
@@ -44,6 +45,43 @@ def request_tv_episode_detail(
     return response
 
 
+# TESTME
+def request_search_tv(
+    authorization: str, query: str, include_adult: bool = True, language: str = "zh-CN", page: int = 1
+):
+    """使用字符串搜索电视剧的信息"""
+    params = {
+        "query": query,
+        "include_adult": include_adult,
+        "language": language,
+        "page": page,
+    }
+    headers = {
+        "accept": "application/json",
+        "Authorization": authorization,
+    }
+    response = httpx.get("https://api.themoviedb.org/3/search/tv", params=params, headers=headers)
+    return response
+
+
+def request_search_movie(
+    authorization: str, query: str, include_adult: bool = True, language: str = "zh-CN", page: int = 1
+):
+    """使用字符串搜索电视剧的信息"""
+    params = {
+        "query": query,
+        "include_adult": include_adult,
+        "language": language,
+        "page": page,
+    }
+    headers = {
+        "accept": "application/json",
+        "Authorization": authorization,
+    }
+    response = httpx.get("https://api.themoviedb.org/3/search/movie", params=params, headers=headers)
+    return response
+
+
 def request_search_multi(
     authorization: str,
     query: str,
@@ -63,3 +101,30 @@ def request_image(img_path: str, size="original"):
     url = f"https://image.tmdb.org/t/p/{size}/{img_path}"  # 完整 URL
     response = requests.get(url)  # 下载图片资源
     return response
+
+
+# TEST
+def get_tv_id_by_name(authorization: str, query: str) -> int:
+    """根据名称获取电视剧的ID。默认选取第一个结果。"""
+    response = request_search_tv(authorization, query)
+
+    if response.status_code != 200:
+        raise Exception(f"get_tv_id_by_name()::请求失败。状态码：{response.status_code}")
+
+    if response.json()["total_results"] == 0:
+        raise Exception(f"get_tv_id_by_name()::未找到相关电视剧。")
+
+    return response.json()["results"][0]["id"]
+
+
+def get_movie_id_by_name(authorization: str, query: str) -> int:
+    """根据名称获取电影的ID。默认选取第一个结果。"""
+    response = request_search_movie(authorization, query)
+
+    if response.status_code != 200:
+        raise Exception(f"get_movie_id_by_name()::请求失败。状态码：{response.status_code}")
+
+    if response.json()["total_results"] == 0:
+        raise Exception(f"get_movie_id_by_name()::未找到相关电影。")
+
+    return response.json()["results"][0]["id"]

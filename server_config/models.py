@@ -8,3 +8,6 @@ class TmdbAccessToken(models.Model):
 
     def __str__(self) -> str:
         return self.value[:25] + "..."
+
+    def get_first_value() -> str:
+        return TmdbAccessToken.objects.first().value

@@ -1,7 +1,8 @@
 requests
+httpx
 django
 psycopg
-opencv-python
+# opencv-python
 matplotlib
 Pillow
 pysubs2
