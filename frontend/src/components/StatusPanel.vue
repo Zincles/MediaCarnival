@@ -42,7 +42,7 @@ const MENU_BUTTON_STYLE = " w-12 h-12 shadow rounded-lg p-3 bg-neutral-700 hover
       <nav class="flex space-x-1 justify-center">
         <router-link :class="NAV_BUTTON_STYLE" to="/">主页</router-link>
         <router-link :class="NAV_BUTTON_STYLE" to="/about">关于</router-link>
-        <router-link :class="NAV_BUTTON_STYLE" to="/file_browser">文件管理器</router-link>
+        <router-link :class="NAV_BUTTON_STYLE" to="/file_browser">文件</router-link>
       </nav>
     </div>
 

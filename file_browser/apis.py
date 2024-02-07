@@ -8,71 +8,67 @@ import json
 
 
 ## 获取文件夹下的所有文件与文件夹。可指定页数，每页的数量，排序方式，排序顺序
-def api_get_folder(request, path: str):
+def api_get_folder(request):
     # 获取查询参数
+    path: str = os.path.join("/", request.GET.get("path", "/"))  # 待遍历文件夹
     page: int = request.GET.get("page", 1)
-    page_size: int = request.GET.get("page_size", 100)
-    sort = request.GET.get("sort", "time")
-    order = request.GET.get("order", "asc")
+    page_size: int = request.GET.get("pageSize", 100)
+    sort: str = request.GET.get("sort", "name")
 
-
-    path: str = os.path.join("/", path)  # 待遍历文件夹
-    name: str = os.path.basename(path)  # 所在目录的名称
+    ## 对（文件名）数组进行排序
+    def sort_arr(arr: list, method="name"):
+        match method:
+            case "name":
+                arr.sort(key=lambda x: x.lower())
+                arr.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
+            case "time":
+                arr.sort(key=lambda x: os.path.getmtime(os.path.join(path, x)), reverse=True)
+                arr.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
+            case _:
+                arr.sort(key=lambda x: x.lower())
+                arr.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
 
     if os.path.isdir(path):
-        # 处理names， 对names排序，按A-Z, a-z的顺序，文件夹在先，文件在后
-        _names = os.listdir(path)
+        raw_names = os.listdir(path)  # 处理names， 对names排序，按A-Z, a-z的顺序，文件夹在先，文件在后
+        sort_arr(raw_names, sort)
 
-        match sort:
-            case "name":
-                _names.sort(key=lambda x: x.lower())
-                _names.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
-            case "time":
-                _names.sort(key=lambda x: os.path.getmtime(os.path.join(path, x)), reverse=True)
-                _names.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
-            case _:
-                _names.sort(key=lambda x: x.lower())
-                
+        paginator = Paginator(raw_names, page_size)  # 分页
 
+        # 检查请求的页数是否超出实际页数
+        if int(page) > paginator.num_pages:
+            names = []
+        else:
+            names = [i for i in paginator.get_page(int(page))]
 
+        is_end = int(page) >= paginator.num_pages
 
-
-
-        # 分页. 从第page页开始，每页page_size个。
-        paginator = Paginator(_names, page_size)
-
-        # 如果请求的页数超过了总页数，返回一个空的响应
-        if int(page) > int(paginator.num_pages):
-            return HttpResponse(json.dumps({"names": [], "paths": [], "types": [], "is_end": True}))
-
-        names = paginator.get_page(page).object_list
-        is_end = not paginator.page(page).has_next()
-
-        paths = [os.path.join(path, name) for name in names]
-        types = ["folder" if os.path.isdir(path) else extlib.get_file_type(path) for path in paths]
+        # 创建API返回的数组
+        sub_paths: list[dict] = [
+            {
+                "path": os.path.join(path, name),
+                "basename": name,
+                "type": extlib.get_file_type(path),
+            }
+            for name in names  # 用name遍历
+        ]
 
         return HttpResponse(
             json.dumps(
                 {
                     "page": page,  # 当前页码
-                    "page_size": page_size,  # 每页的数量
-                    "total_pages": paginator.num_pages,  # 总页数
-                    "sort": sort,  # 排序方式
-                    "order": order,  # 排序顺序
-                    "path": path,  # 当前目录
-                    "paths": paths,  # 当前目录下的所有文件与文件夹的路径
-                    "name": name,  # 当前目录的名称
-                    "names": names,  # 当前目录下的所有文件与文件夹的名称
-                    "types": types,  # 当前目录下的所有文件与文件夹的类型
-                    "is_end": is_end,  # 是否到达最后一页
+                    "pageSize": page_size,  # 每页的数量
+                    "totalPages": paginator.num_pages,  # 总页数
+                    "totalDirs": len(raw_names),  # 总文件数(非单页)
+                    "isEnd": is_end,  # 是否到达最后一页
+                    "subPaths": sub_paths,  # 当前目录下的子目录（文件/文件夹）
                 }
             )
         )
     else:
-        return HttpResponse("Not a folder" + str(path))
+        return Http404("Not a folder" + str(path))
 
 
-## BROKEN
+## TODO BROKEN
 import pysubs2
 import webvtt
 from datetime import timedelta
@@ -157,20 +153,20 @@ def get_file_preview(request, path: str):
 ##  TODO 获取文件缩略图。如果缩略图不存在，则创建缩略图。
 ## 对图像来说，直接返回自身；对视频而言，会尝试创建。
 ## def get_file_thumb(request, path: str):
-    # path = os.path.join("/", path) 
-    # if not os.path.isfile(path):
-    #     return HttpResponse("File not found at: <br>" + str(path))
-    # ext = extlib.get_ext_no_dot(path)
+# path = os.path.join("/", path)
+# if not os.path.isfile(path):
+#     return HttpResponse("File not found at: <br>" + str(path))
+# ext = extlib.get_ext_no_dot(path)
 
-    # # 根据文件类型，返回不同的响应
-    # match extlib.get_file_type(path):
-    #     case "video":
-    #         response = FileResponse(open(path, "rb"), content_type=f"video/{ext}")
-    #         response["Accept-Ranges"] = "bytes"
-    #         return response
-    #     case "image":
-    #         response = FileResponse(open(path, "rb"), content_type=f"image/{ext}")
-    #         response["Accept-Ranges"] = "bytes"
-    #         return response
-    #     case _:
-    #         return HttpResponse("Thumb not supported for this file type")
+# # 根据文件类型，返回不同的响应
+# match extlib.get_file_type(path):
+#     case "video":
+#         response = FileResponse(open(path, "rb"), content_type=f"video/{ext}")
+#         response["Accept-Ranges"] = "bytes"
+#         return response
+#     case "image":
+#         response = FileResponse(open(path, "rb"), content_type=f"image/{ext}")
+#         response["Accept-Ranges"] = "bytes"
+#         return response
+#     case _:
+#         return HttpResponse("Thumb not supported for this file type")
