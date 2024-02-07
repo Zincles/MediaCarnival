@@ -1,21 +1,13 @@
 <template>
   <div class="about">
-    <h1>About Us</h1>
-    <p>
-      Welcome to our website! We are a team of passionate individuals dedicated to providing high-quality media content.
-    </p>
-    <p>
-      Our mission is to entertain, inspire, and inform our audience through various forms of media, including articles,
-      videos, and podcasts.
-    </p>
-    <p>Feel free to explore our website and discover the amazing content we have to offer. Thank you for visiting!</p>
+    <a class ="bg-blue" href="https://vitejs.dev" target="_blank">
+      <img src="/vite.svg" class="" alt="Vite logo" />
+    </a>
+
+    <a href="https://vuejs.org/" target="_blank">
+      <img src="/src/assets/vue.svg" class="" alt="Vue logo" />
+    </a>
+    <h1 class="text-4xl text-center">关于</h1>
+    <p>这是一个实验性质的Vue App, 用于作为Media Carnival的前端。 工程使用到了许多第三方库。</p>
   </div>
 </template>
-
-<style scoped>
-.about {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-</style>
