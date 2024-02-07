@@ -7,5 +7,5 @@ const curPos = ref("Hello, World!"); // 当前app位置
 
 <template>
   <StatusPanel :title="curPos" />
-  <router-view />
+  <router-view class="m-4" />
 </template>

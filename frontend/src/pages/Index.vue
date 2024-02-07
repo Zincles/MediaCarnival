@@ -1,20 +1,8 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>
-    <h1>Welcome to Media Carnival!</h1>
-    <p>Enjoy the exciting world of media entertainment.</p>
+  <div class="text-white text-center">
+    <h1 class="text-4xl">主页</h1>
+    <p>施工中，仍然..</p>
   </div>
 </template>
-
-<style scoped>
-h1 {
-  font-size: 24px;
-  color: #333;
-}
-
-p {
-  font-size: 16px;
-  color: #666;
-}
-</style>
