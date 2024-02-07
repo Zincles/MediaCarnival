@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import StatusPanel from './components/StatusPanel.vue'
+import StatusPanel from "./components/StatusPanel.vue";
+import { ref } from "vue";
+
+const curPos = ref("Hello, World!"); // 当前app位置
 </script>
 
 <template>
-
-  <div class="bg-neutral-500 text-4xl">This is an vue app.</div>
-  <StatusPanel  />
-  <nav>
-    <router-link to="/">Home</router-link>
-    <router-link to="/about">About</router-link>
-
-  </nav>
-
+  <StatusPanel :title="curPos" />
   <router-view />
 </template>
