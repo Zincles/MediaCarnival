@@ -16,8 +16,9 @@ const props = defineProps({
 });
 
 const NAV_BUTTON_STYLE = "shadow rounded-lg p-1 bg-neutral-700 hover:bg-blue-500"; // URL按钮的样式
-const SETTING_BUTTON_STYLE = " w-12 h-12 shadow rounded-lg p-3 bg-neutral-700 hover:bg-blue-500"; // 设置按钮的样式
-const MENU_BUTTON_STYLE = " w-12 h-12 shadow rounded-lg p-3 bg-neutral-700 hover:bg-blue-500";
+
+const SETTING_BUTTON_STYLE = " w-12 h-12 shadow rounded-lg p-2 bg-neutral-700 hover:bg-blue-500"; // 设置按钮的样式
+const MENU_BUTTON_STYLE = " w-12 h-12 shadow rounded-lg p-2 bg-neutral-700 hover:bg-blue-500";
 </script>
 
 <template>
