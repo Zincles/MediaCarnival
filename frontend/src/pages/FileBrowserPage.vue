@@ -27,7 +27,8 @@
       </div>
     </div>
 
-    <q-list bordered separator>
+    <!-- 列表模式下文件夹内容. -->
+    <q-list bordered separator v-if="displayMode === 'list'">
       <q-item v-for="dir in displayedDirs" :key="dir.path" clickable @click="clickDir(dir)">
         <q-item-section>
           <q-item-label class="text-body1">
@@ -41,6 +42,57 @@
         </q-item-section>
       </q-item>
     </q-list>
+
+    <!-- 瀑布流模式下其他内容.显示图片以外的其他东西. -->
+    <q-list bordered separator v-if="displayMode === 'waterfall'">
+      <q-item v-for="dir in displayedDirsExceptWaterfall()" :key="dir.path" clickable @click="clickDir(dir)">
+        <q-item-section>
+          <q-item-label class="text-body1">
+            <!-- 显示图标，根据类型 -->
+            <q-icon size="md" name="folder" v-if="dir.type === 'folder'" />
+            <q-icon size="md" name="arrow_back" v-else-if="dir.type === '..'" />
+            <q-icon size="md" name="insert_drive_file" v-else />
+            {{ dir.basename }}
+          </q-item-label>
+        </q-item-section>
+      </q-item>
+    </q-list>
+
+    <!-- 瀑布流模式下文件夹内容.只显示图片 -->
+    <Waterfall
+      v-if="displayMode === 'waterfall'"
+      :list="getViewCards()"
+      :row-key="'index'"
+      class="bg-dark"
+      :animationDuration="0.5"
+      :breakpoints="{
+        1500: { rowPerView: 4 },
+        1200: { rowPerView: 3 },
+        800: { rowPerView: 2 },
+        500: { rowPerView: 1 },
+      }"
+      :delay="300"
+    >
+      <template #item="{ item, url, index }">
+        <div
+          class="card"
+          @click="
+            () => {
+              currentPreviewPath = displayedDirsInWaterfall()[index];
+              previewDialog = true;
+            }
+          "
+        >
+          <q-card class="my-card bg-grey-9" >
+            <q-card-section class="q-pa-md">
+              <LazyImg :url="url" />
+              {{ item.name }}
+            </q-card-section>
+          </q-card>
+          <!-- <q-img :src="url" spinner-color="primary" spinner-size="82px" /> -->
+        </div>
+      </template>
+    </Waterfall>
 
     <!-- 切换按钮. 非瀑布流才会显示 -->
     <div v-if="displayMode != 'waterfall'">
@@ -68,7 +120,7 @@
     <q-card class="bg-dark text-white">
       <!-- 顶部工具栏 -->
       <q-bar>
-        {{ currentPreviewPath }}
+        {{ currentPreviewPath.basename }}
         <q-space />
         <!-- 调整显示模式."fit-screen==true为适配屏幕,false为保持原样. 样式为toggle"  -->
         <q-toggle v-model="previewDialogFitScreen" label="适配屏幕" class="text-white" />
@@ -85,7 +137,7 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      {{ apiUrls.getFilePreview + currentPreviewPath.path }}
+      <!-- {{ apiUrls.getFilePreview + currentPreviewPath.path }} -->
 
       <!-- 预览图像.可调整图像显示方法: -->
       <q-card-section v-if="currentPreviewPath.type === 'image'" class="text-center flex justify-center">
@@ -119,6 +171,11 @@ import apiUrls from '../apiUrls';
 import axios from 'axios';
 import { dirname } from 'path-browserify';
 import { SubPath } from 'components/models';
+
+// 瀑布流
+import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
+import 'vue-waterfall-plugin-next/dist/style.css';
+import { ViewCard } from 'vue-waterfall-plugin-next/dist/types/types/waterfall';
 
 // 一个路径下的文件/文件夹信息。
 interface DirInfo {
@@ -155,6 +212,7 @@ const currentPreviewPath = ref<SubPath>({
   path: '',
   basename: '',
   type: '',
+  index: -1,
 }); // 当前预览的文件路径
 
 // const display_column = ref(3); // 显示列数
@@ -196,6 +254,7 @@ function updateDirs() {
       path: dirname(currentPath.value), // 所在目录的路径，调用path-browserify的dirname方法
       basename: '..',
       type: '..',
+      index: -1,
     });
   } else {
     // 如果是瀑布流,则不清空原来的文件夹内容,除非page==1
@@ -207,6 +266,7 @@ function updateDirs() {
         path: dirname(currentPath.value), // 所在目录的路径，调用path-browserify的dirname方法
         basename: '..',
         type: '..',
+        index: -1,
       });
     }
   }
@@ -274,6 +334,34 @@ function clickDir(dir: SubPath) {
 
 function getPreviewUrl() {
   return apiUrls.getFilePreview + currentPreviewPath.value.path;
+}
+
+// 获取瀑布流所需的卡片
+function getViewCards() {
+  let cards: ViewCard[] = [];
+
+  displayedDirsInWaterfall().forEach((dir, index) => {
+    let card: ViewCard = {
+      src: apiUrls.getFilePreview + dir.path,
+      id: dir.index.toString(),
+      name: dir.basename,
+      star: false,
+      backgroundColor: 'grey',
+      index: index,
+    };
+    cards.push(card);
+  });
+  return cards;
+}
+
+// 获取所有该显示在瀑布流里的东西
+function displayedDirsInWaterfall() {
+  return displayedDirs.value.filter((dir) => dir.type == 'image');
+}
+
+// 获取显示在瀑布流元素以外的东西
+function displayedDirsExceptWaterfall() {
+  return displayedDirs.value.filter((dir) => dir.type !== 'image');
 }
 
 updateDirs();

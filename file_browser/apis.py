@@ -49,8 +49,9 @@ def api_get_folder(request):
                 "path": os.path.join(path, name),
                 "basename": name,
                 "type": extlib.get_file_type(os.path.join(path, name)),
+                "index": (int(page) - 1) * int(page_size) + index, # Index. 计算得到. 有些危险.
             }
-            for name in names  # 用name遍历
+            for index, name in enumerate(names)  # 用name遍历
         ]
 
         # print("Path:",path)

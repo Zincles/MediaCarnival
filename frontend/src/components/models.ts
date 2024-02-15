@@ -12,4 +12,5 @@ export interface SubPath {
   path: string;
   basename: string;
   type: string;
+  index: number;
 }

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "welcome",
     "server_config",
     "user_config",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "MediaCarnival.urls"
@@ -150,3 +152,8 @@ STATIC_ROOT = "tmp/collectstatic_root"
 
 
 MEDIA_ROOT = MEDIA_ROOT = os.path.join(BASE_DIR, 'data/media')
+
+
+# 允许所有跨站. 这很危险!! 
+# TODO 找到更方便安全的方法
+CORS_ALLOW_ALL_ORIGINS = True
