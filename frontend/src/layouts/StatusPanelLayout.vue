@@ -1,7 +1,7 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <!-- 顶部导航栏 -->
-    <q-header class="bg-grey-9 text-white text-xl shadow-4">
+    <q-header reveal class="bg-grey-9 text-white text-xl shadow-4">
       <q-toolbar class="full-width">
         <!-- 左侧菜单按钮 -->
         <q-btn flat round dense icon="menu" class="q-mr-sm" @click="leftDrawerOpen = !leftDrawerOpen" />
@@ -38,5 +38,4 @@ import { ref } from 'vue';
 const tab = ref('home');
 const leftDrawerOpen = ref(false);
 const rightDrawerOpen = ref(false);
-
 </script>

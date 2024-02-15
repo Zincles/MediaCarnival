@@ -11,9 +11,9 @@ import json
 def api_get_folder(request):
     # 获取查询参数
     path: str = os.path.join("/", request.GET.get("path", "/"))  # 待遍历文件夹
-    page: int = request.GET.get("page", 1)
-    page_size: int = request.GET.get("pageSize", 100)
-    sort: str = request.GET.get("sort", "name")
+    page: int = request.GET.get("page", 1)  # 当前页数
+    page_size: int = request.GET.get("pageSize", 100)  # 总共页数
+    sort: str = request.GET.get("sort", "name")  # 排序方式
 
     ## 对（文件名）数组进行排序
     def sort_arr(arr: list, method="name"):
@@ -28,8 +28,9 @@ def api_get_folder(request):
                 arr.sort(key=lambda x: x.lower())
                 arr.sort(key=lambda x: os.path.isdir(os.path.join(path, x)), reverse=True)
 
+    # 只有文件夹才能被遍历
     if os.path.isdir(path):
-        raw_names = os.listdir(path)  # 处理names， 对names排序，按A-Z, a-z的顺序，文件夹在先，文件在后
+        raw_names = os.listdir(path)  # 处理文件名称， 对names排序，按A-Z, a-z的顺序，文件夹在先，文件在后
         sort_arr(raw_names, sort)
 
         paginator = Paginator(raw_names, page_size)  # 分页
@@ -47,10 +48,15 @@ def api_get_folder(request):
             {
                 "path": os.path.join(path, name),
                 "basename": name,
-                "type": extlib.get_file_type(path),
+                "type": extlib.get_file_type(os.path.join(path, name)),
             }
             for name in names  # 用name遍历
         ]
+
+        # print("Path:",path)
+        # print("OS:",os.listdir(path))
+        # print("Names:",names)
+        # print("subPATHS:",sub_paths)
 
         return HttpResponse(
             json.dumps(
