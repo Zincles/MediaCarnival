@@ -31,3 +31,5 @@ Media Carnival 是作为 Emby 的仿制品开发的，所以功能大概和它�
 ## 仍在施工中
 
 WORKING ON PROGRESS..
+
+node 20.11.1

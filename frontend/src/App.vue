@@ -1,15 +1,15 @@
 <template >
-  <div class="bg-blue-5">
+  <div class="bg-dark text-white">
 
     <router-view />
   </div>
 </template>
 
-<style>
+<!-- <style>
 body {
   background: #202020
 }
-</style>
+</style> -->
 
 <script setup lang="ts">
 

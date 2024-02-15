@@ -9,6 +9,23 @@ const routes: RouteRecordRaw[] = [
         path: '',
         component: () => import('pages/IndexPage.vue'),
       },
+      {
+        path: 'home',
+        component: () => import('pages/HomePage.vue'),
+      },
+      {
+        path: 'library_browser',
+        component: () => import('pages/LibraryBrowser.vue'),
+      },
+      {
+        path: 'about',
+        component: () => import('pages/AboutPage.vue'),
+      },
+      {
+        path: 'file_browser',
+        component: () => import('pages/FileBrowserPage.vue'),
+      }
+
     ],
   },
 

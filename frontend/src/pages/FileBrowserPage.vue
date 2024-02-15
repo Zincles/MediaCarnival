@@ -102,30 +102,15 @@ updateDirs();
     <br /><br />
 
     <div v-for="dir in displayedDirs" :key="dir.path">
-      <div
-        class="rounded-lg text-xl bg-neutral-700 m-2 hover:bg-blue-500"
-        @click="clickDir(dir)"
-      >
+      <div class="rounded-lg text-xl bg-neutral-700 m-2 hover:bg-blue-500" @click="clickDir(dir)">
         {{ dir.basename }}
       </div>
     </div>
 
     {{ curPage }}/{{ totalPages }}页
     <div>
-      <button
-        class="rounded-2xl bg-neutral-600 m-1 p-1"
-        v-if="curPage >= 2"
-        @click="loadPrevPage"
-      >
-        上一页
-      </button>
-      <button
-        class="rounded-2xl bg-neutral-600 m-1 p-1"
-        v-if="!reachedEnd"
-        @click="loadNextPage"
-      >
-        下一页
-      </button>
+      <button class="rounded-2xl bg-neutral-600 m-1 p-1" v-if="curPage >= 2" @click="loadPrevPage">上一页</button>
+      <button class="rounded-2xl bg-neutral-600 m-1 p-1" v-if="!reachedEnd" @click="loadNextPage">下一页</button>
     </div>
   </div>
 </template>

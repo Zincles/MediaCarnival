@@ -1,1 +1,1 @@
-cd frontend && npm run dev
+cd frontend && yarn run dev

@@ -1,6 +1,6 @@
 <template>
     <div>
-        This is index page.
+        This is Home Page, Hello world!
     </div>
 </template>
 
