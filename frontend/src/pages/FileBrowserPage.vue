@@ -83,7 +83,7 @@
             }
           "
         >
-          <q-card class="my-card bg-grey-9" >
+          <q-card class="my-card bg-grey-9">
             <q-card-section class="q-pa-md">
               <LazyImg :url="url" />
               {{ item.name }}
@@ -105,8 +105,10 @@
   </q-page>
 
   <!-- 瀑布流 继续加载 按钮. 按下后会加载下一页. 如果到底了则不会显示. -->
-  <div class="flex flex-center">
-    <q-btn v-if="displayMode === 'waterfall' && !reachedEnd" label="继续加载" @click="loadNextPage" class="q-mt-md" />
+  <div v-if="displayMode === 'waterfall'">
+    <div class="waterfall-load-button flex flex-center" v-intersection="loadNextPage">
+      <q-btn v-if="displayMode === 'waterfall' && !reachedEnd" label="继续加载" @click="loadNextPage" class="q-mt-md" />
+    </div>
   </div>
 
   <!-- 用于预览媒体文件 -->
@@ -294,6 +296,9 @@ function updateDirs() {
 }
 
 function loadNextPage() {
+  if (isLoading.value || reachedEnd.value) {
+    return;
+  }
   if (reachedEnd.value) {
     return;
   }
@@ -365,4 +370,26 @@ function displayedDirsExceptWaterfall() {
 }
 
 updateDirs();
+
+// // // 创建一个新的 Intersection Observer 实例
+// let observer = new IntersectionObserver((entries, observer) => {
+//   // 遍历所有被观察的元素
+//   entries.forEach(entry => {
+//     // 如果元素进入了视口
+//     if (entry.isIntersecting) {
+//       // 执行你的加载函数
+//       loadNextPage();
+//       // 取消观察这个元素
+//       observer.unobserve(entry.target);
+//     }
+//   });
+// });
+
+// {{observer}}
+
+// // 获取你的隐藏元素
+// let hiddenElement = document.querySelector('#waterfall-load-button') as Element;
+
+// // 开始观察这个元素
+// observer.observe(hiddenElement);
 </script>
