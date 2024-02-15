@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { defineProps } from "vue";
-import { ref } from "vue";
-import apiUrls from "../apiUrls";
-import axios from "axios";
-import { dirname } from "path-browserify";
+import { defineProps } from 'vue';
+import { ref } from 'vue';
+import apiUrls from '../apiUrls';
+import axios from 'axios';
+import { dirname } from 'path-browserify';
 
 // 一个路径下的文件/文件夹信息。
 interface DirInfo {
@@ -26,7 +26,7 @@ interface SubPath {
 let props = defineProps({
   path: {
     type: String,
-    default: "/",
+    default: '/',
   },
 });
 
@@ -47,8 +47,8 @@ function updateDirs() {
   // 添加“..”路径
   displayedDirs.value.push({
     path: dirname(currentPath.value), // 所在目录的路径，调用path-browserify的dirname方法
-    basename: "..",
-    type: "dir",
+    basename: '..',
+    type: 'dir',
   });
 
   axios
@@ -102,15 +102,30 @@ updateDirs();
     <br /><br />
 
     <div v-for="dir in displayedDirs" :key="dir.path">
-      <div class="rounded-lg text-xl bg-neutral-700 m-2 hover:bg-blue-500" @click="clickDir(dir)">
+      <div
+        class="rounded-lg text-xl bg-neutral-700 m-2 hover:bg-blue-500"
+        @click="clickDir(dir)"
+      >
         {{ dir.basename }}
       </div>
     </div>
 
     {{ curPage }}/{{ totalPages }}页
     <div>
-      <button class="rounded-2xl bg-neutral-600 m-1 p-1" v-if="curPage >= 2" @click="loadPrevPage">上一页</button>
-      <button class="rounded-2xl bg-neutral-600 m-1 p-1" v-if="!reachedEnd" @click="loadNextPage">下一页</button>
+      <button
+        class="rounded-2xl bg-neutral-600 m-1 p-1"
+        v-if="curPage >= 2"
+        @click="loadPrevPage"
+      >
+        上一页
+      </button>
+      <button
+        class="rounded-2xl bg-neutral-600 m-1 p-1"
+        v-if="!reachedEnd"
+        @click="loadNextPage"
+      >
+        下一页
+      </button>
     </div>
   </div>
 </template>
