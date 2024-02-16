@@ -1,4 +1,7 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
+from enum import auto
+from tkinter import E
+from django.dispatch import receiver
 from requests import Response
 from .lib import hash, tmdb_api
 from django.utils import timezone
@@ -9,6 +12,7 @@ from django.db import models
 from datetime import datetime, timedelta
 from moviepy.editor import VideoFileClip
 import os, tempfile
+from django.db.models.signals import pre_save, post_save
 
 
 class MediaLibrary(models.Model):
@@ -24,7 +28,7 @@ class MediaLibrary(models.Model):
     library_type = models.CharField(max_length=128, null=False, default="TV")
 
     # "COMPLEX(自定义指定)", "FLAT(一个文件夹对应一个Series)"
-    structure_type = models.CharField(max_length=128, null=False, default="FLAT")
+    structure_type = models.CharField(max_length=128, null=False, default="SIMPLE")
 
     class Meta:
         verbose_name = "媒体库"
@@ -33,7 +37,7 @@ class MediaLibrary(models.Model):
     def __str__(self) -> str:
         return "[媒体库：" + self.library_name + "]"
 
-    def create_library(path, library_type="SHOWS", structure_type="FLAT"):
+    def create_library(path, library_type="TV", structure_type="SIMPLE"):
         """创建库."""
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
         return MediaLibrary(root_node=node, library_type=library_type, structure_type=structure_type)
@@ -43,21 +47,25 @@ class MediaLibrary(models.Model):
         for node in self.root_nodes.all():
             node.update_recursively()
 
-    def rescan_library(self, scan_type="FLAT"):
+    def rescan_library(self):
         """重扫描库。通过FSNode与文件系统通信。"""
         try:
             for unit in self.unit.all():  # 清除现有的Units
                 unit.delete()
-            match scan_type:  # 根据预设进行行动
-                case "FLAT":  # 标注模式
+            match self.structure_type:
+                case "SIMPLE":
+                    # 将每个root文件夹下的第一级文件夹视为MediaUnit.
                     for root_node in self.root_nodes.all():  # 遍历根节点们
                         # 获取所有文件节点(非目录)。平放到一个数组里。
                         folder_nodes = {node for node in root_node.get_children() if node.is_directory()}
 
                         # 为每个文件夹创建MediaUnit.
                         for node in folder_nodes:
-                            unit = MediaUnit(library=self, fsnode=node)
+                            unit = MediaUnit(library=self, fsnode=node, unit_type=self.library_type)
                             unit.save()
+
+                case "COMPLEX":  # 复杂模式
+                    pass
                 case _:
                     raise Exception("指定了错误的媒体库扫描类型！")
         except Exception as e:
@@ -79,6 +87,7 @@ class MediaUnit(models.Model):
     # "TV" "FILMS" "IMAGES" "MUSICS" "BOOKS" "FILES"
 
     nickname = models.CharField(max_length=512, null=True, blank=True)  # 自定义别名. 由用户手动指定
+    query_name = models.CharField(max_length=512, null=True, blank=True)  # 查询名称. 可由用户修改.
 
     # TV剧集元数据。一个媒体Unit在创建时，必须指定其指向的位置，与类型。
     metadata_tmdb_tv = models.ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit", blank=True)
@@ -95,27 +104,89 @@ class MediaUnit(models.Model):
         "获取文件夹名称."
         return os.path.basename(self.fsnode.get_basename())
 
+    def get_media_files(self) -> list:
+        """获取符合格式的媒体文件数组。"""
+        match self.unit_type:
+            case "TV":
+                return [
+                    i
+                    for i in self.fsnode.get_children(deep=True)
+                    if i.is_file() and i.get_basename().endswith((".mp4", ".mkv", ".avi"))
+                ]
+            case "MOVIE":
+                return [
+                    i
+                    for i in self.fsnode.get_children(deep=True)
+                    if i.is_file() and i.get_basename().endswith((".mp4", ".mkv", ".avi"))
+                ]
+            case "MUSIC":
+                return [
+                    i
+                    for i in self.fsnode.get_children(deep=True)
+                    if i.is_file() and i.get_basename().endswith((".mp3", ".flac", ".wav", ".ogg"))
+                ]
+            case "IMAGE":
+                return [
+                    i
+                    for i in self.fsnode.get_children(deep=True)
+                    if i.is_file() and i.get_basename().endswith((".jpg", ".png", ".bmp", ".gif"))
+                ]
+            case "BOOK":
+                return [
+                    i
+                    for i in self.fsnode.get_children(deep=True)
+                    if i.is_file() and i.get_basename().endswith((".pdf", ".epub", ".mobi"))
+                ]
+            case _:
+                raise Exception("错误的媒体类型！")
+
     def update_tmdb_id_by_folder_name(self, AUTH):
-        """根据文件夹名称,查询并更新tmdb_id。需要API key. 遇到错误则抛出。"""
+        """根据文件夹名称,查询并更新tmdb_id。需要API key. 遇到错误则抛出。
+        仅在受支持的类型里可用: MOVIE, TV"""
+
+        # 会默认尝试查询用户指定的名称. 如果用户没有指定,则查询文件夹名称.
+        if self.query_name is None:
+            query_name = self.get_basename()
+        else:
+            query_name = self.query_name
+
         try:
             match self.unit_type:
                 case "TV":
-                    id = tmdb_api.get_tv_id_by_name(AUTH, self.get_basename())
+                    id = tmdb_api.get_tv_id_by_name(AUTH, query_name)
                     self.tmdb_id = id
                     self.save()
-                    print(f"类型为TV, 文件夹名为{self.get_basename()}, ID为{id}")
+                    print(f"查询TV名为{self.query_name}, ID为{id}")
 
                 case "MOVIE":
-                    id = tmdb_api.get_movie_id_by_name(AUTH, self.get_basename())
+                    id = tmdb_api.get_movie_id_by_name(AUTH, self.query_name)
                     self.tmdb_id = id
                     self.save()
-                    print(f"类型为MOVIE, 文件夹名为{self.get_basename()}, ID为{id}")
+                    print(f"查询MOVIE名为{self.query_name}, ID为{id}")
 
                 case _:
                     raise Exception(f"错误的媒体类型！: {self.unit_type}不受支持！")
 
         except Exception as e:
             print("更新tmdb_id时遇到错误:", e)
+            raise e
+
+    def attach_tmdb_metadata_by_id(self, AUTH):
+        """根据已有的tmdb_id,获取并附加元数据。需要API key. 遇到错误则抛出。"""
+        try:
+            self.metadata_tmdb_tv.clear()
+            self.metadata_tmdb_movie.clear()  # 清空已有的元数据
+
+            match self.unit_type:
+                case "TV":
+
+                    self.metadata_tmdb_tv.add(TmdbTvSeriesDetails.create_or_update(AUTH, self.tmdb_id))
+                    print(f"已获取TV ID为{self.tmdb_id}的元数据")
+
+                case _:
+                    raise Exception(f"错误的媒体类型！: {self.unit_type}不受支持！")
+        except Exception as e:
+            print("获取元数据时遇到错误:", e)
             raise e
 
 
@@ -143,7 +214,7 @@ class TmdbTvSeriesDetails(models.Model):
 
     series_id = models.IntegerField(null=False)  # 剧集ID, 必须有数值
 
-    updated_time = models.DateTimeField(null=False)  # 本地的数据的更新时间
+    updated_time = models.DateTimeField(null=False, auto_now=True)  # 本地的数据的更新时间
     metadata = models.JSONField(null=True, blank=True)
 
     class Meta:
@@ -151,21 +222,36 @@ class TmdbTvSeriesDetails(models.Model):
         verbose_name_plural = verbose_name
 
     # TEST
-    def get_or_create_or_update(self, AUTH, tolerate_time=0):
-        """获取或创建或更新一个Series的元数据。"""
-        series_id = self.series_id
+    def create_or_update(AUTH, series_id, tolerate_time=0):
+        """创建或更新一个Series的元数据。"""
         try:
-            existed = TmdbTvSeriesDetails.objects.get(series_id=series_id)
-            existed.update(AUTH, tolerate_time)  # 尝试更新
-            return existed
-        except TmdbTvSeriesDetails.DoesNotExist:  # 本地没有元数据，创建之
-            new = TmdbTvSeriesDetails(series_id=series_id)
-            new.save()
-            new.update(AUTH, tolerate_time)
-            return new
+            # 如果能找到本地的元数据，则尝试更新。
+            obj = TmdbTvSeriesDetails.objects.filter(series_id=series_id)
+            if obj.exists():
+                obj.update(AUTH, tolerate_time)
+                return obj.first()
+            else:
+                # 否则,创建新的元数据节点并保存。
+                new = TmdbTvSeriesDetails(series_id=series_id)
+                new.save()
+                new.update(AUTH, tolerate_time)
+                return new
+
         except Exception as e:
-            print("get_or_create_or_update()::遇到错误:", e)
-            return
+            print("create_or_update()::遇到了错误: ", e)
+
+        # try:
+        #     existed = TmdbTvSeriesDetails.objects.get(series_id=series_id)
+        #     existed.update(AUTH, tolerate_time)  # 尝试更新
+        #     return existed
+        # except TmdbTvSeriesDetails.DoesNotExist:  # 本地没有元数据，创建之
+        #     new = TmdbTvSeriesDetails(series_id=series_id)
+        #     new.save()
+        #     new.update(AUTH, tolerate_time)
+        #     return new
+        # except Exception as e:
+        #     print("get_or_create_or_update()::遇到错误:", e)
+        #     return
 
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
@@ -471,6 +557,12 @@ class FSNode(models.Model):
         verbose_name = "文件节点"
         verbose_name_plural = verbose_name
 
+    def save(self, *args, **kwargs):
+        self.path = os.path.join("/", self.path)
+        self.path = os.path.normpath(self.path)  # 规范化路径
+        super().save(*args, **kwargs)  # 调用原有的 save 方法来保存模型
+        print("保存了节点:", self.path)
+
     def __str__(self):
         return str(self.path)
 
@@ -556,7 +648,9 @@ class FSNode(models.Model):
 
         try:
             for untracked_basename in self.get_untracked_basenames():  # 为未追踪的路径创建节点
-                node = FSNode(path=os.path.join(self.path, untracked_basename), parent=self)
+                path = os.path.join(self.path, untracked_basename)
+                path = os.path.normpath(path)  # 规范化路径
+                node = FSNode(path=path, parent=self)
                 node.save()
 
             lost_track_nodes = self.get_lost_track_nodes()  # 移除丢失追踪的节点

@@ -9,7 +9,7 @@
         <!-- 中央导航按钮 -->
         <q-tabs v-model="tab" inline-label class="full-width">
           <q-route-tab name="home" label="主页" icon="home" stacked to="/home" />
-          <q-route-tab name="library" label="媒体" icon="video_library" stacked to="/library_browser" />
+          <q-route-tab name="library" label="媒体库" icon="video_library" stacked to="/library_browser" />
           <q-route-tab name="file" label="文件" icon="folder" stacked to="/file_browser" />
           <q-route-tab name="about" label="关于" icon="info" stacked to="/about" />
         </q-tabs>

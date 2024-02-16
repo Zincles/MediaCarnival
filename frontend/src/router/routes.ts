@@ -24,8 +24,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'file_browser',
         component: () => import('pages/FileBrowserPage.vue'),
-      }
-
+      },
     ],
   },
 

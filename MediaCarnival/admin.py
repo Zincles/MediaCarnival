@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.utils import timezone
 from datetime import datetime, timedelta
 from .models import *
+from .lib import strlib
 
 
 # 获取TMDB Access Token
@@ -18,12 +19,12 @@ class FSNodeAdmin(admin.ModelAdmin):
         "id",
         "path",
     ]
-    # list_filter = ["parent"]
+    list_filter = ["parent"]
     search_fields = ["path"]
 
     @admin.display(description="文件名")
     def _get_basename(self, node):
-        return node.get_path_basename()
+        return node.get_basename()
 
     @admin.display(description="类型")
     def _get_filetype(self, node) -> str:
@@ -98,6 +99,7 @@ class MediaUnitAdmin(admin.ModelAdmin):
         "nickname",
         "_get_tmdb_metadata_status",
     ]
+    list_display_links = ["get_basename", "fsnode"]
     filter_horizontal = ("metadata_tmdb_tv", "metadata_tmdb_movie")
 
     @admin.display(description="TMDB元数据状况")
@@ -125,7 +127,26 @@ class MediaUnitAdmin(admin.ModelAdmin):
             except Exception as e:
                 messages.error(request, f"节点 {i} 更新元数据失败。原因：{e}")
 
-    actions = [_update_tmdb_id_by_basename]
+    @admin.action(description="显示已有的媒体文件数组")
+    def _show_media_files(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                F = [fnode.get_basename() for fnode in i.get_media_files()]
+
+                messages.info(request, f"Unit {i} 的媒体文件：{F}")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 获取媒体文件失败。原因：{e}")
+
+    @admin.action(description="根据已有TMDB ID，获取元数据并附加")
+    def _attach_tmdb_metadata_by_id(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.attach_tmdb_metadata_by_id(get_tmdb_access_token())
+                messages.success(request, f"已对Unit {i} 附加了元数据。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 附加元数据失败。原因：{e}")
+
+    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id]
 
 
 # TMDB Series
