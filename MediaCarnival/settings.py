@@ -38,12 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "MediaCarnival",
-    "core",
-    "media_library",
-    "file_browser",
-    "welcome",
-    "server_config",
-    "user_config",
     "corsheaders",
 ]
 
@@ -150,10 +144,9 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 STATIC_ROOT = "tmp/collectstatic_root"
 
 
+MEDIA_ROOT = MEDIA_ROOT = os.path.join(BASE_DIR, "data/media")
 
-MEDIA_ROOT = MEDIA_ROOT = os.path.join(BASE_DIR, 'data/media')
 
-
-# 允许所有跨站. 这很危险!! 
+# 允许所有跨站. 这很危险!!
 # TODO 找到更方便安全的方法
 CORS_ALLOW_ALL_ORIGINS = True

@@ -1,12 +1,8 @@
-from django.contrib import admin
-from core.models import FSNode, MediaLibrary, MediaUnit
-from core.models import TmdbTvSeriesDetails, TmdbTvSeasonDetails, TmdbTvEpisodeDetails, TmdbMovieDetails
+#   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
 from django.contrib import admin, messages
-
 from django.utils import timezone
 from datetime import datetime, timedelta
-
-from server_config.models import TmdbAccessToken
+from .models import *
 
 
 # 获取TMDB Access Token
@@ -148,7 +144,6 @@ class TmdbTvSeriesDetailsAdmin(admin.ModelAdmin):
 
     list_display = ["series_id", "updated_time", "get_name", "get_update_timedelta"]
     truncatewords = 10
-    # truncatechars:10
 
 
 # TMDB Season
@@ -192,6 +187,7 @@ class TmdbTvEpisodeDetailsAdmin(admin.ModelAdmin):
     ]
 
 
+# TMDB Movie
 class TmdbMovieDetailsAdmin(admin.ModelAdmin):
     @admin.display(description="获取Metadata的预览")
     def _get_meta_preview(self, meta):
@@ -202,11 +198,41 @@ class TmdbMovieDetailsAdmin(admin.ModelAdmin):
     list_display = ["movie_id", "_get_meta_preview"]
 
 
+## 管理缩略图
+class ThumbnailAdmin(admin.ModelAdmin):
+    list_display = ("path", "thumbnail", "file_created_at", "file_updated_at", "created_at", "updated_at")
+    list_filter = ("file_created_at", "file_updated_at", "created_at", "updated_at")
+    search_fields = ("path", "thumbnail", "file_created_at", "file_updated_at", "created_at", "updated_at")
+    date_hierarchy = "created_at"
+
+    # 覆写管理员面板的删除方法，使其能够删除缩略图文件。
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            obj.delete()
+
+
+# 管理TMDB Access Token
+class TmdbAccessTokenAdmin(admin.ModelAdmin):
+    list_display = ("id", "value")
+    list_display_links = ("id", "value")
+
+
+# 管理用户配置
+class UserConfigAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", "language"]
+    list_display_links = ["id", "user"]
+
+    def __str__(self) -> str:
+        return f"[UserConfig: {self.user.username}]"
+
+
 admin.site.register(MediaLibrary, MediaLibraryAdmin)
 admin.site.register(FSNode, FSNodeAdmin)
 admin.site.register(MediaUnit, MediaUnitAdmin)
-
 admin.site.register(TmdbTvSeriesDetails, TmdbTvSeriesDetailsAdmin)
 admin.site.register(TmdbTvSeasonDetails, TmdbTvSeasonDetailsAdmin)
 admin.site.register(TmdbTvEpisodeDetails, TmdbTvEpisodeDetailsAdmin)
 admin.site.register(TmdbMovieDetails, TmdbMovieDetailsAdmin)
+admin.site.register(Thumbnail, ThumbnailAdmin)
+admin.site.register(TmdbAccessToken, TmdbAccessTokenAdmin)
+admin.site.register(UserConfig, UserConfigAdmin)

@@ -1,26 +1,14 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
-import os
 from requests import Response
-from os.path import isdir
-from lib import hash
-from django.db import models
-from django.contrib import admin, messages
-from django.db.models import (
-    CharField,
-    BooleanField,
-    ManyToManyField,
-    FloatField,
-    JSONField,
-    DateTimeField,
-    IntegerField,
-    ForeignKey,
-)
+from .lib import hash, tmdb_api
 from django.utils import timezone
+from django.contrib import admin, messages
+from django.contrib.auth.models import User
+from django.core.files import File
+from django.db import models
 from datetime import datetime, timedelta
-
-import lib.tmdb as tmdb_api
-
-## TODO 时区的管理仍然很混乱。需要完善。
+from moviepy.editor import VideoFileClip
+import os, tempfile
 
 
 class MediaLibrary(models.Model):
@@ -42,6 +30,9 @@ class MediaLibrary(models.Model):
         verbose_name = "媒体库"
         verbose_name_plural = verbose_name
 
+    def __str__(self) -> str:
+        return "[媒体库：" + self.library_name + "]"
+
     def create_library(path, library_type="SHOWS", structure_type="FLAT"):
         """创建库."""
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
@@ -55,12 +46,9 @@ class MediaLibrary(models.Model):
     def rescan_library(self, scan_type="FLAT"):
         """重扫描库。通过FSNode与文件系统通信。"""
         try:
-            # 清除现有的Units
-            for unit in self.unit.all():
+            for unit in self.unit.all():  # 清除现有的Units
                 unit.delete()
-
-            # 根据预设进行行动
-            match scan_type:
+            match scan_type:  # 根据预设进行行动
                 case "FLAT":  # 标注模式
                     for root_node in self.root_nodes.all():  # 遍历根节点们
                         # 获取所有文件节点(非目录)。平放到一个数组里。
@@ -70,15 +58,11 @@ class MediaLibrary(models.Model):
                         for node in folder_nodes:
                             unit = MediaUnit(library=self, fsnode=node)
                             unit.save()
-
                 case _:
                     raise Exception("指定了错误的媒体库扫描类型！")
         except Exception as e:
             print("扫描库中遇到错误：", e)
             raise e
-
-    def __str__(self) -> str:
-        return "[媒体库：" + self.library_name + "]"
 
 
 class MediaUnit(models.Model):
@@ -97,19 +81,19 @@ class MediaUnit(models.Model):
     nickname = models.CharField(max_length=512, null=True, blank=True)  # 自定义别名. 由用户手动指定
 
     # TV剧集元数据。一个媒体Unit在创建时，必须指定其指向的位置，与类型。
-    metadata_tmdb_tv = ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit", blank=True)
-    metadata_tmdb_movie = ManyToManyField(to="TmdbMovieDetails", related_name="media_unit", blank=True)
+    metadata_tmdb_tv = models.ManyToManyField(to="TmdbTvSeriesDetails", related_name="media_unit", blank=True)
+    metadata_tmdb_movie = models.ManyToManyField(to="TmdbMovieDetails", related_name="media_unit", blank=True)
 
     class Meta:
         verbose_name = "媒体单位"
         verbose_name_plural = verbose_name
 
+    def __str__(self) -> str:
+        return "[MediaUnit: " + self.fsnode.path + "]"
+
     def get_basename(self):
         "获取文件夹名称."
         return os.path.basename(self.fsnode.get_basename())
-
-    def __str__(self) -> str:
-        return "[MediaUnit: " + self.fsnode.path + "]"
 
     def update_tmdb_id_by_folder_name(self, AUTH):
         """根据文件夹名称,查询并更新tmdb_id。需要API key. 遇到错误则抛出。"""
@@ -142,13 +126,25 @@ class MediaUnit(models.Model):
 # ============================== #
 
 
+class TmdbAccessToken(models.Model):
+    """TheMovieDB的访问令牌"""
+
+    value = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.value[:25] + "..."
+
+    def get_first_value() -> str:
+        return TmdbAccessToken.objects.first().value
+
+
 class TmdbTvSeriesDetails(models.Model):
     """TMDB 剧集系列元数据信息"""
 
-    series_id = IntegerField(null=False)  # 剧集ID, 必须有数值
+    series_id = models.IntegerField(null=False)  # 剧集ID, 必须有数值
 
-    updated_time = DateTimeField(null=False)  # 本地的数据的更新时间
-    metadata = JSONField(null=True, blank=True)
+    updated_time = models.DateTimeField(null=False)  # 本地的数据的更新时间
+    metadata = models.JSONField(null=True, blank=True)
 
     class Meta:
         verbose_name = "TMDB TV 系列 元数据"
@@ -304,11 +300,11 @@ class TmdbTvSeriesDetails(models.Model):
 class TmdbTvSeasonDetails(models.Model):
     """TMDB剧集的 Season 信息"""
 
-    series_id = IntegerField(null=False)
-    season_number = IntegerField(null=False)
+    series_id = models.IntegerField(null=False)
+    season_number = models.IntegerField(null=False)
 
-    updated_time = DateTimeField()  # 本地的数据的更新时间
-    metadata = JSONField(null=True, blank=True)
+    updated_time = models.DateTimeField()  # 本地的数据的更新时间
+    metadata = models.JSONField(null=True, blank=True)
 
     class Meta:
         verbose_name = "TMDB TV 季 元数据"
@@ -347,12 +343,12 @@ class TmdbTvSeasonDetails(models.Model):
 class TmdbTvEpisodeDetails(models.Model):
     """TMDB具体Episode的信息"""
 
-    series_id = IntegerField(null=False)
-    season_number = IntegerField(null=False)
-    episode_number = IntegerField(null=False)
+    series_id = models.IntegerField(null=False)
+    season_number = models.IntegerField(null=False)
+    episode_number = models.IntegerField(null=False)
 
-    updated_time = DateTimeField()  # 本地的数据的更新时间
-    metadata = JSONField(null=True, blank=True)
+    updated_time = models.DateTimeField()  # 本地的数据的更新时间
+    metadata = models.JSONField(null=True, blank=True)
 
     class Meta:
         verbose_name = "TMDB TV 剧集 元数据"
@@ -391,9 +387,9 @@ class TmdbTvEpisodeDetails(models.Model):
 class TmdbMovieDetails(models.Model):
     """电影的元数据"""
 
-    movie_id = IntegerField(null=False)
-    updated_time = DateTimeField(null=False)
-    metadata = JSONField(null=True, blank=True)
+    movie_id = models.IntegerField(null=False)
+    updated_time = models.DateTimeField(null=False)
+    metadata = models.JSONField(null=True, blank=True)
 
     class Meta:
         verbose_name = "TMDB Movie 元数据"
@@ -456,11 +452,11 @@ class TmdbImageFile(models.Model):
 # 文件系统的节点树.
 class FSNode(models.Model):
     """
-    文件系统的映射节点. 用于供媒体库使用. 每当创建一个媒体库,就构建一颗映射树.
-    映射树内的每个节点,对应着真实路径下的某个位置. 节点的属性并非实时更新的. 需要使用函数手动递归更新.
+    文件系统的映射节点. 用于供媒体库使用.映射树内的每个节点,对应着真实路径下的某个位置.
+    节点的属性并非实时更新的. 需要使用函数手动递归更新.
     """
 
-    HASH_METHOD = "md5"  # "sha256"
+    HASH_METHOD = "md5"  # 默认的哈希方法
 
     parent = models.ForeignKey(to="self", on_delete=models.CASCADE, null=True, blank=True, related_name="child")
     path = models.CharField(max_length=512)  # 所指向的绝对路径
@@ -471,25 +467,26 @@ class FSNode(models.Model):
     meta_last_modified_time = models.DateTimeField(null=True, blank=True, auto_now=True)
     meta_last_created_time = models.DateTimeField(null=True, blank=True, auto_now_add=True)
 
-    # 获取文件的BaseName
-    def get_path_basename(self):
+    class Meta:
+        verbose_name = "文件节点"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return str(self.path)
+
+    def get_basename(self) -> str:
+        """获取路径的文件的basename.例如, /home/user/sth.txt -> sth.txt."""
         return os.path.basename(self.path)
 
-    def get_basename(self):
-        return os.path.basename(self.path)
-
-    # 是否是目录？
-    def is_directory(self):
+    def is_directory(self) -> bool:
         return os.path.isdir(self.path)
 
-    def is_file(self):
+    def is_file(self) -> bool:
         return os.path.isfile(self.path)
 
-    # 是否可用？
-    def is_accessible(self):
+    def is_accessible(self) -> bool:
         return os.access(self.path, os.R_OK)
 
-    # UNTESTED
     def get_child(self, child_name: str):
         """根据名称获取单层子节点"""
         for child in self.child.all():
@@ -498,11 +495,11 @@ class FSNode(models.Model):
         raise Exception("core::FSNode::get_child(): 错误!未能找到Child! 输入文件名为: " + child_name)
 
     def get_children(self, deep=False):
+        """获取当前节点的所有子节点. 如果deep=True,则返回所有子节点的子节点."""
         if deep == False:
             return set(self.child.all())
         else:
-            # 返回当前节点的所有子节点的get_children()的并集
-            if not os.path.isdir(self.path):
+            if not os.path.isdir(self.path):  # 返回当前节点的所有子节点的get_children()的并集
                 return set([])
             result = set(self.child.all())
 
@@ -558,61 +555,167 @@ class FSNode(models.Model):
             raise Exception("节点不可访问")
 
         try:
-            # 为未追踪的路径创建节点
-            for untracked_basename in self.get_untracked_basenames():
-                node = FSNode(
-                    path=os.path.join(self.path, untracked_basename),
-                    parent=self,
-                )
+            for untracked_basename in self.get_untracked_basenames():  # 为未追踪的路径创建节点
+                node = FSNode(path=os.path.join(self.path, untracked_basename), parent=self)
                 node.save()
 
-            # 移除丢失追踪的节点
-            lost_track_nodes = self.get_lost_track_nodes()
+            lost_track_nodes = self.get_lost_track_nodes()  # 移除丢失追踪的节点
             for n in lost_track_nodes:
                 n.delete()
 
-            # 保存自己
-            self.save()
+            self.save()  # 保存自己
 
-            # 尝试对自己的children迭代call.
-            try:
+            try:  # 尝试对自己的children迭代call.
                 for child_node in self.get_children():
                     child_node.update_recursively(ttl - 1)
             except Exception as e:
                 print("迭代遇到错误:", e)
 
-            # 再次尝试保存
-            self.save()
-            # print(f"[info]节点更新完毕: {self.path}")
+            self.save()  # 再次尝试保存
+            print(f"[info]节点更新完毕: {self.path}")
 
-        # 遇到错误
         except Exception as e:
             print("异常发生(core::update_recursively):\n\t", e)
             return
 
     def update_metadata(self):
-        """更新当前节点的元数据."""
+        """更新当前节点的元数据. TEST this"""
         try:
             abs_path = self.path
-            if isdir(abs_path):
+            if os.path.isdir(abs_path):
                 """是目录"""
                 print("是目录.")
 
             else:
                 """是文件"""
                 print("是文件.计算.")
-                meta_size = os.path.getsize(abs_path)
-                meta_hash = hash.get_file_hash(file_abs_path=self.path)
+                self.meta_size = os.path.getsize(abs_path)
+                self.meta_hash = hash.get_file_hash(file_abs_path=self.path)
 
-                meta_last_modified_time = os.path.getmtime(self.path)
-                meta_last_created_time = os.path.getctime(self.path)
+                self.meta_last_modified_time = os.path.getmtime(self.path)
+                self.meta_last_created_time = os.path.getctime(self.path)
 
         except Exception as e:
             print(f"更新元数据时遇到错误:{e}")
 
-    def __str__(self):
-        return str(self.path)
 
-    class Meta:
-        verbose_name = "文件节点"
-        verbose_name_plural = verbose_name
+# ================================ #
+#                                  #
+#            用户设置相关            #
+#                                  #
+# ================================ #
+
+
+class UserConfig(models.Model):
+    """用户配置"""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="user_config")
+
+    # 用户状态
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login_at = models.DateTimeField(auto_now=True)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    # 个人设置
+    language = models.CharField(max_length=255, null=True, blank=True, default="zh-CN")
+    file_browser_cols = models.IntegerField(null=False, blank=False, default=4)
+
+    # 个人收藏的目录位置信息
+    favorite_paths = models.JSONField(default=dict)
+
+    ## 设置个人收藏的目录位置信息
+    def set_favorate_path(self, name: str, path: str):
+        path = os.path.abspath(path)
+
+        # 读取favorite_paths作为字典, 写入键值对
+        favorite_paths: dict = self.favorite_paths
+        favorite_paths[name] = path
+
+        # 保存
+        self.favorite_paths = favorite_paths
+        self.favorite_paths.save()
+
+    ## 获取个人的所有收藏目录
+    def get_favorate_paths(self, name: str):
+        return self.favorite_paths[name]
+
+
+# ================================ #
+#                                  #
+#            FileBrowser            #
+#                                  #
+# ================================ #
+
+
+## 缩略图模型。通过创建时间与更新时间来判断是否需要更新。
+class Thumbnail(models.Model):
+    path = models.CharField(max_length=200, unique=True, blank=False, null=False)  # 原文件的文件系统中的路径
+    thumbnail = models.ImageField(upload_to="thumbnails", blank=True, null=True)  # 缩略图
+
+    # 文件的创建时间与更新时间。
+    file_created_at = models.DateTimeField(blank=False, null=False)
+    file_updated_at = models.DateTimeField(blank=False, null=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # 可容忍的缩略图缓存时间。如果文件不存在了，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除缩略图。
+    # 这是针对远程挂载的文件系统的优化，因为远程挂载的文件系统可能会在一段时间后不可用。
+    cache_time: timedelta = timedelta(days=1)
+
+    # 缩略图是否可用？非最新或者不存在时不可用。
+    def is_outdated(self):
+        # 获取路径下文件的创建时间与更新时间
+        file_created_at_timestamp = os.path.getctime(self.path)
+        file_updated_at_timestamp = os.path.getmtime(self.path)
+
+        # 将时间戳转换为带有时区的 datetime 对象
+        file_created_at = timezone.make_aware(datetime.fromtimestamp(file_created_at_timestamp))
+        file_updated_at = timezone.make_aware(datetime.fromtimestamp(file_updated_at_timestamp))
+
+        # 比较创建时间与更新时间是否相同
+        return file_created_at == self.file_created_at and file_updated_at == self.file_updated_at
+
+    # 缩略图是否存在？存在时可用。
+    def thumbnail_exists(self):
+        return self.thumbnail and self.file_created_at and self.file_updated_at and os.path.exists(self.thumbnail.path)
+
+    # 获取并更新缩略图。（覆盖）
+    # 如果文件不存在了，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除模型。
+    def update_thumbnail(self):
+        # 如果文件不存在，则将缩略图暂时缓存一段时间。如果达到缓存时间，则删除模型。
+        if not os.path.exists(self.path):
+            print("缩略图不存在")
+            if self.thumbnail_exists() and abs(timezone.now() - self.file_updated_at) > self.cache_time:
+                print("\t缩略图已经过期，删除之模型。")
+                self.delete()
+                return
+            print("\t缩略图未过期，不删除模型。")
+            return
+
+        # 若存在，则更新缩略图。
+        try:
+            clip = VideoFileClip(self.path)
+            time = clip.duration / 2  # 获取视频的中间帧作为缩略图
+
+            # 在系统的临时目录中创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+                thumbnail_path = f.name
+
+            clip.save_frame(thumbnail_path, t=time)
+
+            # 打开缩略图文件并保存到模型中
+            with open(thumbnail_path, "rb") as f:
+                self.thumbnail.save(thumbnail_path, File(f), save=True)
+                os.remove(thumbnail_path)
+        except Exception as e:
+            print("更新缩略图遇到异常： ", e)
+
+    def __str__(self):
+        return f"[Thumb for {os.path.basename(self.path)}]"
+
+    # 删除时，确保缩略图文件也被删除。
+    def delete(self, *args, **kwargs):
+        self.thumbnail.delete()
+        super().delete(*args, **kwargs)
