@@ -14,3 +14,14 @@ export interface SubPath {
   type: string;
   index: number;
 }
+
+
+export interface GetMediaLibraryResponse {
+  libraries: MediaLibrary[];
+}
+
+// 一个媒体库的信息
+export interface MediaLibrary {
+  id: number;
+  library_name: string;
+}

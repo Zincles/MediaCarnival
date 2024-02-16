@@ -113,7 +113,11 @@ def get_user_config(request):
 
 
 def get_media_libraries(request):
-    """获取所有的媒体库。返回JSON格式。"""
+    """
+    获取所有的媒体库。返回JSON格式。
+    {libraries:[{Library1}, {Library2}, {...}]}
+    """
+    
     libraries = [model_to_dict(lib, ["id", "library_name"]) for lib in MediaLibrary.objects.all()]
     return HttpResponse(json.dumps({"libraries": libraries}))
 
