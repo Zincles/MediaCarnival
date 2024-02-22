@@ -66,6 +66,7 @@
       class="bg-dark"
       :animationDuration="0.5"
       :breakpoints="{
+        2000: { rowPerView: 5 },
         1500: { rowPerView: 4 },
         1200: { rowPerView: 3 },
         800: { rowPerView: 2 },
@@ -167,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, watch } from 'vue';
+import { watch } from 'vue';
 import { ref } from 'vue';
 import apiUrls from '../apiUrls';
 import axios from 'axios';
@@ -280,10 +281,13 @@ function updateDirs() {
         path: currentPath.value, // 路径
         page: curPage.value, // 当前页码
         pageSize: pageSize.value, // 每页显示的文件数
+        sort: 'name', // 排序方式
+        pictureBehind: displayMode.value === 'waterfall', // 是否是瀑布流? 是则将图片放在后面
       },
     })
     .then((response) => {
       console.log(response.data);
+      console.log('获取文件夹内容成功', displayMode.value);
       totalPages.value = response.data.totalPages; // 更新总页数
       displayedDirs.value = displayedDirs.value.concat(response.data.subPaths); // 将文件夹内容附加到原来的文件夹内容上
       reachedEnd.value = response.data.isEnd; // 是否到达最后一页
@@ -370,26 +374,4 @@ function displayedDirsExceptWaterfall() {
 }
 
 updateDirs();
-
-// // // 创建一个新的 Intersection Observer 实例
-// let observer = new IntersectionObserver((entries, observer) => {
-//   // 遍历所有被观察的元素
-//   entries.forEach(entry => {
-//     // 如果元素进入了视口
-//     if (entry.isIntersecting) {
-//       // 执行你的加载函数
-//       loadNextPage();
-//       // 取消观察这个元素
-//       observer.unobserve(entry.target);
-//     }
-//   });
-// });
-
-// {{observer}}
-
-// // 获取你的隐藏元素
-// let hiddenElement = document.querySelector('#waterfall-load-button') as Element;
-
-// // 开始观察这个元素
-// observer.observe(hiddenElement);
 </script>

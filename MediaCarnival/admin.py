@@ -91,6 +91,7 @@ class MediaLibraryAdmin(admin.ModelAdmin):
 # 媒体单元
 class MediaUnitAdmin(admin.ModelAdmin):
     list_display = [
+        "id",
         "get_basename",
         "unit_type",
         "tmdb_id",

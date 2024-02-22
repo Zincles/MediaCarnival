@@ -1,8 +1,4 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
-from enum import auto
-from tkinter import E
-from django.dispatch import receiver
-from requests import Response
 from .lib import hash, tmdb_api
 from django.utils import timezone
 from django.contrib import admin, messages
@@ -38,7 +34,7 @@ class MediaLibrary(models.Model):
         return "[媒体库：" + self.library_name + "]"
 
     def create_library(path, library_type="TV", structure_type="SIMPLE"):
-        """创建库."""
+        """创建库. 保存并返回一个新的库实例。"""
         node = path if path is FSNode else FSNode(path=path)  # Path可以输入为节点/字符串.
         return MediaLibrary(root_node=node, library_type=library_type, structure_type=structure_type)
 
