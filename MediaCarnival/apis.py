@@ -168,6 +168,8 @@ def get_media_unit_by_id(request):
                 "unit": ref.unit.id,
                 "media_type": ref.media_type,
                 "description": ref.description,
+                "episode": ref.episode,
+                "season": ref.season,
             }
             for ref in refs
         ]

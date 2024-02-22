@@ -52,4 +52,6 @@ export interface MediaFileRef {
     unit: number;
     media_type: string;
     description: string;
+    episode: number | null;
+    season: number | null;
 }
