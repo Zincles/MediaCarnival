@@ -27,7 +27,17 @@
     <!-- Inspector模式，展示单元的详细信息 -->
     <div v-if="mode === 'inspector'" class="text-white">
         你正在试图访问 [Unit={{ curUnit?.id }}] 的详细信息。
-        
+
+        {{ curUnit?.id }}
+        {{ curUnit?.media_file_refs }}
+        <div v-for="media_file_ref in curUnit?.media_file_refs" :key="media_file_ref.id">
+            <div>
+                ID:{{ media_file_ref.id }}<br />
+                DESC:{{ media_file_ref.description }}<br />
+                UNIT:{{ media_file_ref.unit }}<br />
+            </div>
+        </div>
+
         <q-btn @click="exitUnit" label="返回" />
     </div>
 </template>
@@ -35,12 +45,7 @@
 <script setup lang="ts">
 import axios from 'axios';
 import apiUrls from 'src/apiUrls';
-import {
-    GetLibraryContentResponse,
-    GetMediaLibraryResponse,
-    GetMediaUnitResponse,
-    MediaUnit,
-} from 'src/components/models';
+import { GetLibraryContentResponse, GetMediaLibraryResponse, MediaUnit } from 'src/components/models';
 
 import { ref } from 'vue';
 
@@ -49,7 +54,7 @@ const curUnit = ref<MediaUnit | null>(); // 当前单元的ID
 
 const librariesResponse = ref<GetMediaLibraryResponse | null>();
 const libraryContentResponses = ref<GetLibraryContentResponse[] | null>();
-const mediaUnitResponses = ref<GetMediaUnitResponse[] | null>();
+const mediaUnitResponses = ref<MediaUnit[] | null>();
 
 function switchMode() {
     if (mode.value === 'browser') {
@@ -113,7 +118,7 @@ async function updateLibraries() {
 
     // 获取每个单元的详细信息
     mediaUnitIds.forEach(async (unit_id) => {
-        let unit: GetMediaUnitResponse | null = await getMediaUnit(unit_id);
+        let unit: MediaUnit | null = await getMediaUnit(unit_id);
 
         if (unit !== null) {
             mediaUnitResponses.value?.push(unit);
@@ -163,7 +168,7 @@ async function getMediaLibraryContent(library_id: number): Promise<GetLibraryCon
 }
 
 // 调用API,获取MediaUnit的详细信息
-async function getMediaUnit(unit_id: number): Promise<GetMediaUnitResponse | null> {
+async function getMediaUnit(unit_id: number): Promise<MediaUnit | null> {
     try {
         const response = await axios.get(apiUrls.getMediaUnit, { params: { unit_id: unit_id } });
         return response.data;

@@ -34,16 +34,6 @@ export interface GetLibraryContentResponse {
     units_id: number[];
 }
 
-export interface GetMediaUnitResponse {
-    id: number;
-    library: number;
-    fsnode: number;
-    tmdb_id: number;
-    unit_type: string;
-    nickname: string;
-    query_name: string;
-}
-
 // 一个媒体单元的信息
 export interface MediaUnit {
     id: number;
@@ -53,4 +43,13 @@ export interface MediaUnit {
     unit_type: string;
     nickname: string;
     query_name: string;
+    media_file_refs: MediaFileRef[];
+}
+
+export interface MediaFileRef {
+    id: number;
+    fsnode: number;
+    unit: number;
+    media_type: string;
+    description: string;
 }

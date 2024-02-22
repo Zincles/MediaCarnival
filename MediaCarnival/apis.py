@@ -2,7 +2,7 @@
 from django.core.paginator import Paginator
 from django.forms import model_to_dict
 from django.http import Http404, HttpResponse, FileResponse
-from .models import MediaUnit, UserConfig, Thumbnail, MediaLibrary
+from .models import MediaFileRef, MediaUnit, UserConfig, Thumbnail, MediaLibrary
 from .lib import extlib
 import os, json
 
@@ -155,8 +155,25 @@ def get_media_unit_by_id(request):
     unit_id: int = int(request.GET.get("unit_id", -1))
 
     try:
+        # 获取单元，获取基础数据
         unit = MediaUnit.objects.get(id=unit_id)
         unit_dict = model_to_dict(unit, ["id", "library", "nickname", "unit_type"])
+
+        # 获取单元拥有的 MediaFileRef, 并转换为字典
+        refs = MediaFileRef.objects.filter(unit=unit).all()
+        refs_dict = [
+            {
+                "id": ref.id,
+                "fsnode": ref.fsnode.id,
+                "unit": ref.unit.id,
+                "media_type": ref.media_type,
+                "description": ref.description,
+            }
+            for ref in refs
+        ]
+
+        unit_dict["media_file_refs"] = refs_dict
+
         return HttpResponse(json.dumps(unit_dict))
 
     except Exception as e:

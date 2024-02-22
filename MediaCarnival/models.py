@@ -557,17 +557,6 @@ class MediaFileRef(models.Model):
 
     description = models.CharField(max_length=512, null=True, blank=True)
 
-    # 对媒体文件的描述。优先使用自定义描述。如果关联到了TMDB的元数据，则会使用TMDB的描述。
-    def get_description (self) -> str:
-        if not (self.description is None): # 有描述
-            return self.description
-        elif self.tmdb_tv_metadata is not None: # 有关联到TMDB的元数据
-            return self.tmdb_tv_metadata.metadata["overview"]
-        elif self.tmdb_movie_metadata is not None: # 有关联到TMDB的元数据
-            return self.tmdb_movie_metadata.metadata["overview"]
-        else: # 没有描述
-            return "N/A"
-
 
     # 关联到TMDB的元数据。关联到TmdbMovieDetails或者TmdbTvEpisodeDetails.
     # 因为每个文件一定只对应一个Episode（且一定不可能对应Series或者Season），所以这里不需要关联到TmdbTvSeriesDetails。
