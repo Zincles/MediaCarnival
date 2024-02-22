@@ -1,4 +1,5 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
+from enum import Enum
 from .lib import hash, tmdb_api
 from django.utils import timezone
 from django.contrib import admin, messages
@@ -9,6 +10,9 @@ from datetime import datetime, timedelta
 from moviepy.editor import VideoFileClip
 import os, tempfile
 from django.db.models.signals import pre_save, post_save
+
+
+# MEDIA_TYPES = ["TV", "FILMS", "IMAGES", "MUSICS", "BOOKS", "FILES"]
 
 
 class MediaLibrary(models.Model):
@@ -80,7 +84,6 @@ class MediaUnit(models.Model):
 
     tmdb_id = models.IntegerField(null=True, blank=True)  # tmdb ID
     unit_type = models.CharField(max_length=64, null=False, default="TV")
-    # "TV" "FILMS" "IMAGES" "MUSICS" "BOOKS" "FILES"
 
     nickname = models.CharField(max_length=512, null=True, blank=True)  # 自定义别名. 由用户手动指定
     query_name = models.CharField(max_length=512, null=True, blank=True)  # 查询名称. 可由用户修改.
@@ -100,7 +103,7 @@ class MediaUnit(models.Model):
         "获取文件夹名称."
         return os.path.basename(self.fsnode.get_basename())
 
-    def get_media_files(self) -> list:
+    def get_media_fsnodes_by_type(self) -> list:
         """获取符合格式的媒体文件数组。"""
         match self.unit_type:
             case "TV":
@@ -185,6 +188,18 @@ class MediaUnit(models.Model):
             print("获取元数据时遇到错误:", e)
             raise e
 
+    def update_media_file_refs(self):
+        "更新一个Unit对应的所有MediaFileRef"
+        mediafile_refs = MediaFileRef.objects.filter(unit=self)
+        mediafile_refs.delete()
+        print("\t首先删除所有的MediaFileRef")
+        
+        # 然后获取该Unit所拥有的所有文件节点，为每个符合格式的文件节点创建一个MediaFileRef
+        for fsnode in self.get_media_fsnodes_by_type():
+            ref = MediaFileRef(fsnode=fsnode, unit=self, media_type=self.unit_type)
+            ref.save()
+            print(f"\t创建了一个MediaFileRef: {ref}")
+
 
 # ============================== #
 #                                #
@@ -216,6 +231,9 @@ class TmdbTvSeriesDetails(models.Model):
     class Meta:
         verbose_name = "TMDB TV 系列 元数据"
         verbose_name_plural = verbose_name
+
+    def __str__(self) -> str:
+        return f"[{self.metadata["name"]}]"
 
     # TEST
     def create_or_update(AUTH, series_id, tolerate_time=0):
@@ -331,6 +349,7 @@ class TmdbTvSeriesDetails(models.Model):
                 existed_episodes = set(
                     TmdbTvEpisodeDetails.objects.filter(series_id=self.series_id, season_number=season_num)
                 )
+                
                 existed_episode_meta_nums: set[int] = {i.episode_number for i in existed_episodes}  # 已有的节目的ID
 
                 print(f"找到了已有Episodes:{existed_episodes}")
@@ -370,13 +389,7 @@ class TmdbTvSeriesDetails(models.Model):
             print(f"错误： {e}")
             return f"ERROR!{e}"
 
-    def __str__(self) -> str:
-        try:
-            name: str = self.metadata["name"] if not self.metadata is None else "N/A"
-            return f"[TMDB Series: ID={self.series_id} NAME={name}]"
-        except Exception as e:
-            print(f"错误：{e}")
-            return f"[TMDB Series ERROR! 获取名称失败,{e}]"
+
 
 
 class TmdbTvSeasonDetails(models.Model):
@@ -391,6 +404,10 @@ class TmdbTvSeasonDetails(models.Model):
     class Meta:
         verbose_name = "TMDB TV 季 元数据"
         verbose_name_plural = verbose_name
+
+    def __str__(self) -> str:
+        series = TmdbTvSeriesDetails.objects.get(series_id=self.series_id)
+        return f"[{series.metadata["name"]} S{self.season_number}]"
 
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
@@ -435,6 +452,11 @@ class TmdbTvEpisodeDetails(models.Model):
     class Meta:
         verbose_name = "TMDB TV 剧集 元数据"
         verbose_name_plural = verbose_name
+
+    def __str__(self) -> str:
+        series = TmdbTvSeriesDetails.objects.get(series_id=self.series_id)
+        return f"[{series.metadata["name"]} S{self.season_number}E{self.episode_number} ]"
+
 
     ## 获取更新时间距今的时间差。
     def get_update_timedelta(self):
@@ -501,13 +523,6 @@ class TmdbMovieDetails(models.Model):
             print("更新系列元数据遇到异常", e)
 
 
-# ================================ #
-#                                  #
-#         TMDB 的 图像元数据         #
-#                                  #
-# ================================ #
-
-
 class TmdbImageFile(models.Model):
     """从TMDB抓取的图像缓存。"""
 
@@ -521,6 +536,47 @@ class TmdbImageFile(models.Model):
 
     class Meta:
         verbose_name = "TMDB图像文件"
+        verbose_name_plural = verbose_name
+
+
+# ================================ #
+#                                  #
+#            媒体文件中间层          #
+#                                  #
+# ================================ #
+class MediaFileRef(models.Model):
+    """对媒体文件的引用。因为添加了额外的元数据，所以可以存储文件所属媒体的信息，例如TMDB的元数据，等。"""
+
+    # 每个媒体文件都属于一个FSNode. 当Node被删除时，文件也会被删除。（MediaFile被删除并不影响node）
+    fsnode = models.ForeignKey(to="FSNode", on_delete=models.CASCADE, null=False, related_name="media_file_ref")
+
+    # 同样的，每个媒体文件也一定属于一个MediaUnit。当Unit被删除时，文件也会被删除。（MediaFile被删除并不影响unit）
+    unit = models.ForeignKey(to="MediaUnit", on_delete=models.CASCADE, null=False, related_name="media_file_ref")
+
+    media_type = models.CharField(max_length=64, null=False, default="TV")
+
+    description = models.CharField(max_length=512, null=True, blank=True)
+
+    # 对媒体文件的描述。优先使用自定义描述。如果关联到了TMDB的元数据，则会使用TMDB的描述。
+    def get_description (self) -> str:
+        if not (self.description is None): # 有描述
+            return self.description
+        elif self.tmdb_tv_metadata is not None: # 有关联到TMDB的元数据
+            return self.tmdb_tv_metadata.metadata["overview"]
+        elif self.tmdb_movie_metadata is not None: # 有关联到TMDB的元数据
+            return self.tmdb_movie_metadata.metadata["overview"]
+        else: # 没有描述
+            return "N/A"
+
+
+    # 关联到TMDB的元数据。关联到TmdbMovieDetails或者TmdbTvEpisodeDetails.
+    # 因为每个文件一定只对应一个Episode（且一定不可能对应Series或者Season），所以这里不需要关联到TmdbTvSeriesDetails。
+    # 这是可选项。
+    tmdb_tv_metadata = models.ForeignKey(to="TmdbTvEpisodeDetails", on_delete=models.CASCADE, null=True, blank=True)
+    tmdb_movie_metadata = models.ForeignKey(to="TmdbMovieDetails", on_delete=models.CASCADE, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Media File Ref"
         verbose_name_plural = verbose_name
 
 

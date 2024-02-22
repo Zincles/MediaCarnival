@@ -147,7 +147,20 @@ class MediaUnitAdmin(admin.ModelAdmin):
             except Exception as e:
                 messages.error(request, f"节点 {i} 附加元数据失败。原因：{e}")
 
-    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id]
+    @admin.action(description="更新MediaFileRef")
+    def _update_media_file_refs(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.update_media_file_refs()
+                messages.success(request, f"已对Unit {i} 更新了MediaFileRef。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 更新MediaFileRef失败。原因：{e}")
+
+    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id, _update_media_file_refs]
+
+
+class MediaFileRefAdmin(admin.ModelAdmin):
+    list_display = ["id", "fsnode", "unit", "media_type"]
 
 
 # TMDB Series
@@ -164,7 +177,7 @@ class TmdbTvSeriesDetailsAdmin(admin.ModelAdmin):
 
     actions = ["update", "deep_update"]
 
-    list_display = ["series_id", "updated_time", "get_name", "get_update_timedelta"]
+    list_display = ["__str__", "series_id", "updated_time", "get_name", "get_update_timedelta"]
     truncatewords = 10
 
 
@@ -182,7 +195,14 @@ class TmdbTvSeasonDetailsAdmin(admin.ModelAdmin):
         return result
 
     actions = ["update"]
-    list_display = ["series_id", "season_number", "updated_time", "_get_meta_preview", "get_update_timedelta"]
+    list_display = [
+        "__str__",
+        "series_id",
+        "season_number",
+        "updated_time",
+        "_get_meta_preview",
+        "get_update_timedelta",
+    ]
 
 
 # TMDB Episode
@@ -200,6 +220,7 @@ class TmdbTvEpisodeDetailsAdmin(admin.ModelAdmin):
 
     actions = ["update"]
     list_display = [
+        "__str__",
         "series_id",
         "season_number",
         "episode_number",
@@ -258,3 +279,4 @@ admin.site.register(TmdbMovieDetails, TmdbMovieDetailsAdmin)
 admin.site.register(Thumbnail, ThumbnailAdmin)
 admin.site.register(TmdbAccessToken, TmdbAccessTokenAdmin)
 admin.site.register(UserConfig, UserConfigAdmin)
+admin.site.register(MediaFileRef, MediaFileRefAdmin)
