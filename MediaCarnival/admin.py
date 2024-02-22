@@ -156,7 +156,16 @@ class MediaUnitAdmin(admin.ModelAdmin):
             except Exception as e:
                 messages.error(request, f"节点 {i} 更新MediaFileRef失败。原因：{e}")
 
-    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id, _update_media_file_refs]
+    @admin.action(description="根据文件名,识别ref的季号/集号")
+    def _match_ref_season_episode_by_basename(modeladmin, request, queryset):
+        for i in queryset:
+            try:
+                i.match_ref_season_episode_by_basename()
+                messages.success(request, f"已对Unit {i} 更新了MediaFileRef的季号/集号。")
+            except Exception as e:
+                messages.error(request, f"节点 {i} 更新MediaFileRef的季号/集号失败。原因：{e}")
+
+    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id, _update_media_file_refs, _match_ref_season_episode_by_basename]
 
 
 class MediaFileRefAdmin(admin.ModelAdmin):

@@ -1,5 +1,7 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
 from enum import Enum
+
+from MediaCarnival.lib import matcher
 from .lib import hash, tmdb_api
 from django.utils import timezone
 from django.contrib import admin, messages
@@ -200,6 +202,48 @@ class MediaUnit(models.Model):
             ref.save()
             print(f"\t创建了一个MediaFileRef: {ref}")
 
+    def match_ref_season_episode_by_basename(self):
+        """更新MediaFileRef的元数据。"""
+        all_refs :list[MediaFileRef]= list(MediaFileRef.objects.filter(unit=self))
+        
+        # basenames = []
+        basenames :list[str] = [ ref.fsnode.get_basename() for ref in all_refs]
+        print(basenames)
+        
+        episode_mapper = {}
+        season_mapper = {}
+        try:
+            episode_mapper = matcher.get_episode_mapping(basenames)
+        except Exception as e:
+            print("match_ref_season_episode_by_basename()::识别Episode时遇到错误:", e)
+        try:
+            season_mapper = matcher.get_season_mapping(basenames)
+        except Exception as e:
+            print("match_ref_season_episode_by_basename()::识别Season时遇到错误:", e)
+        
+        print(episode_mapper)
+        print(season_mapper)
+        
+        # 应用映射
+        for ref in all_refs:
+            try:
+                if ref.fsnode.get_basename() in episode_mapper:
+                    ref.episode = episode_mapper[ref.fsnode.get_basename()]
+                    ref.save()
+                    print(f"更新了Episode: {ref.fsnode.get_basename()} -> {ref.episode}")
+            except Exception as e:
+                print("match_ref_season_episode_by_basename()::更新Episode时遇到错误:", e)
+
+            try:
+                if ref.fsnode.get_basename() in season_mapper:
+                    ref.season = season_mapper[ref.fsnode.get_basename()]
+                    ref.save()
+                    print(f"更新了Season: {ref.fsnode.get_basename()} -> {ref.season}")
+            except Exception as e:
+                print("match_ref_season_episode_by_basename()::更新Season时遇到错误:", e)
+
+    
+        
 
 # ============================== #
 #                                #
@@ -390,8 +434,6 @@ class TmdbTvSeriesDetails(models.Model):
             return f"ERROR!{e}"
 
 
-
-
 class TmdbTvSeasonDetails(models.Model):
     """TMDB剧集的 Season 信息"""
 
@@ -556,6 +598,9 @@ class MediaFileRef(models.Model):
     media_type = models.CharField(max_length=64, null=False, default="TV")
 
     description = models.CharField(max_length=512, null=True, blank=True)
+
+    season  = models.IntegerField(null=True, blank=True)
+    episode = models.IntegerField(null=True, blank=True)
 
 
     # 关联到TMDB的元数据。关联到TmdbMovieDetails或者TmdbTvEpisodeDetails.

@@ -5,6 +5,8 @@ import re
 ## 该库有多种匹配模式，会尝试自适应找到最合适的（也就是变数最多的）匹配模式。
 ## 不过，前提是输入的字符串们的模式是一致的————变数不能太多。
 ## 另外，Season的上限是99.
+
+## 目前代码写的很野，这完全取决于作者精神状态（现在是半夜4:46AM）。
 ## TODO 这个库远远没有编写完毕。还有很多路要走！
 
 EPISODE_PATTERN_JELLYFIN = r"(?<=E)\d{1,}"  # S01E01
@@ -161,29 +163,29 @@ def get_season_mapping(raw_strs: list[str]) -> dict:
     return result
 
 
-RAW_ARR = [
-    "[Sakurato] Mahou Shoujo ni Akogarete1 [01][AVC-8bit 1080P AAC][CHS]",
-    "[Sakurato] Mahou Shoujo ni Akogarete1 [02][AVC-8bit 1080P AAC][CHS]",
-    "[Sakurato] Mahou Shoujo ni Akogarete1 [03][AVC-8bit 1080P AAC][CHS]",
-]
+# RAW_ARR = [
+#     "[Sakurato] Mahou Shoujo ni Akogarete1 [01][AVC-8bit 1080P AAC][CHS]",
+#     "[Sakurato] Mahou Shoujo ni Akogarete1 [02][AVC-8bit 1080P AAC][CHS]",
+#     "[Sakurato] Mahou Shoujo ni Akogarete1 [03][AVC-8bit 1080P AAC][CHS]",
+# ]
 
-JEL_ARR = [
-    "SOME_SHOW - S02E01 - SOME_EPISODE 01 [1080p]",
-    "SOME_SHOW - S03E02 - SOME_EPISODE 02 [1080p]",
-    "SOME_SHOW - S04E03 - SOME_EPISODE 03 [1080p]",
-]
+# JEL_ARR = [
+#     "SOME_SHOW - S02E01 - SOME_EPISODE 01 [1080p]",
+#     "SOME_SHOW - S03E02 - SOME_EPISODE 02 [1080p]",
+#     "SOME_SHOW - S04E03 - SOME_EPISODE 03 [1080p]",
+# ]
 
-BAD_ARR = [
-    "Channel 6 - SOME_EPISODE 01 [1080p]",
-    "Channel 6 - SOME_EPISODE 02 [1080p]",
-    "Channel 6 - SOME_EPISODE 03 [1080p]",
-    "Channel 6 - SOME_EPISODE 04 [1080p]",
-]
+# BAD_ARR = [
+#     "Channel 6 - SOME_EPISODE 01 [1080p]",
+#     "Channel 6 - SOME_EPISODE 02 [1080p]",
+#     "Channel 6 - SOME_EPISODE 03 [1080p]",
+#     "Channel 6 - SOME_EPISODE 04 [1080p]",
+# ]
 
-RAW = "[Sakurato] Mahou Shoujo ni Akogarete [05][AVC-8bit 1080P AAC][CHS]"
+# RAW = "[Sakurato] Mahou Shoujo ni Akogarete [05][AVC-8bit 1080P AAC][CHS]"
 
 
-os.system("clear")
-v = get_episode_mapping(BAD_ARR)
-for i in v:
-    print(i, "\t", v[i])
+# os.system("clear")
+# v = get_episode_mapping(BAD_ARR)
+# for i in v:
+#     print(i, "\t", v[i])
