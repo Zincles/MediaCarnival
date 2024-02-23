@@ -181,3 +181,26 @@ def get_media_unit_by_id(request):
     except Exception as e:
         print(f"get_media_unit_by_id::错误!: 尝试访问单元[{unit_id}], {e}")
         return HttpResponse(f"get_media_unit_by_id::错误!: 尝试访问单元[{unit_id}], {e}")
+
+
+def get_tmdb_episode_metadata_by_mediafile_ref(request):
+    """
+    根据MediaFileRef的ID，获取TMDB元数据。返回JSON格式。
+    获取的是MediaFileRef的元数据。对应的是Episode。
+    """
+
+    ref_id: int = int(request.GET.get("ref_id", -1))
+
+    try:
+        ref = MediaFileRef.objects.get(id=ref_id)
+        metadata = ref.get_tmdb_metadata()
+        if metadata:
+            return HttpResponse(json.dumps(metadata))
+        else:
+            return HttpResponse(f"No metadata found at {ref_id}.")
+    except Exception as e:
+        print(f"get_tmdb_metadata_by_mediafile_ref::错误!: 尝试访问Ref[{ref_id}], {e}")
+        return HttpResponse(f"get_tmdb_metadata_by_mediafile_ref::错误!: 尝试访问Ref[{ref_id}], {e}")
+
+    # ref = MediaFileRef.objects.get(id=ref_id)
+    # return HttpResponse(json.dumps(ref.get_tmdb_metadata()))

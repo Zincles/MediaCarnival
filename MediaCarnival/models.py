@@ -1,7 +1,7 @@
 #   ALL CODE WRITTEN BY Down Zincles, Following GPLv3 Lisence.
 from enum import Enum
 
-from MediaCarnival.lib import matcher
+from MediaCarnival.lib import matcher, strlib
 from .lib import hash, tmdb_api
 from django.utils import timezone
 from django.contrib import admin, messages
@@ -33,7 +33,7 @@ class MediaLibrary(models.Model):
     structure_type = models.CharField(max_length=128, null=False, default="SIMPLE")
 
     class Meta:
-        verbose_name = "媒体库"
+        verbose_name = "MediaLibrary 媒体库"
         verbose_name_plural = verbose_name
 
     def __str__(self) -> str:
@@ -63,7 +63,7 @@ class MediaLibrary(models.Model):
 
                         # 为每个文件夹创建MediaUnit.
                         for node in folder_nodes:
-                            unit = MediaUnit(library=self, fsnode=node, unit_type=self.library_type)
+                            unit = MediaUnit(library=self, fsnode=node, unit_type=self.library_type, nickname=node.get_basename())
                             unit.save()
 
                 case "COMPLEX":  # 复杂模式
@@ -95,7 +95,7 @@ class MediaUnit(models.Model):
     metadata_tmdb_movie = models.ManyToManyField(to="TmdbMovieDetails", related_name="media_unit", blank=True)
 
     class Meta:
-        verbose_name = "媒体单位"
+        verbose_name = "MediaUnit 媒体单位"
         verbose_name_plural = verbose_name
 
     def __str__(self) -> str:
@@ -146,10 +146,14 @@ class MediaUnit(models.Model):
         仅在受支持的类型里可用: MOVIE, TV"""
 
         # 会默认尝试查询用户指定的名称. 如果用户没有指定,则查询文件夹名称.
-        if self.query_name is None:
-            query_name = self.get_basename()
-        else:
+        # query_name > nickname > basename
+        if self.query_name is not None:
             query_name = self.query_name
+        elif self.nickname is not None:
+            query_name = self.nickname
+        else:
+            query_name = self.get_basename()
+
 
         try:
             match self.unit_type:
@@ -157,19 +161,19 @@ class MediaUnit(models.Model):
                     id = tmdb_api.get_tv_id_by_name(AUTH, query_name)
                     self.tmdb_id = id
                     self.save()
-                    print(f"查询TV名为{self.query_name}, ID为{id}")
+                    print(f"查询TV名为{query_name}, ID为{id}")
 
                 case "MOVIE":
-                    id = tmdb_api.get_movie_id_by_name(AUTH, self.query_name)
+                    id = tmdb_api.get_movie_id_by_name(AUTH, query_name)
                     self.tmdb_id = id
                     self.save()
-                    print(f"查询MOVIE名为{self.query_name}, ID为{id}")
+                    print(f"查询MOVIE名为{query_name}, ID为{id}")
 
                 case _:
                     raise Exception(f"错误的媒体类型！: {self.unit_type}不受支持！")
 
         except Exception as e:
-            print("更新tmdb_id时遇到错误:", e)
+            print(f"更新tmdb_id时遇到错误:尝试搜索{query_name}，但是：", e)
             raise e
 
     def attach_tmdb_metadata_by_id(self, AUTH):
@@ -180,10 +184,12 @@ class MediaUnit(models.Model):
 
             match self.unit_type:
                 case "TV":
-
-                    self.metadata_tmdb_tv.add(TmdbTvSeriesDetails.create_or_update(AUTH, self.tmdb_id))
+                    self.metadata_tmdb_tv.clear() # 清空已有的元数据
+                    metadata = TmdbTvSeriesDetails.create_or_update(AUTH, self.tmdb_id)
+                    self.metadata_tmdb_tv.add(metadata)
+                    #self.metadata_tmdb_tv.add(TmdbTvSeriesDetails.create_or_update(AUTH, self.tmdb_id))
                     print(f"已获取TV ID为{self.tmdb_id}的元数据")
-
+                    self.save()
                 case _:
                     raise Exception(f"错误的媒体类型！: {self.unit_type}不受支持！")
         except Exception as e:
@@ -242,7 +248,21 @@ class MediaUnit(models.Model):
             except Exception as e:
                 print("match_ref_season_episode_by_basename()::更新Season时遇到错误:", e)
 
-    
+    def get_tmdb_metadata(self) -> dict | None:
+        """获取该Unit的TMDB元数据。"""
+        try:
+            match self.unit_type:
+                case "TV":
+                    metadata = self.metadata_tmdb_tv.first().metadata
+                    return metadata
+                case "MOVIE":
+                    metadata = self.metadata_tmdb_tv.first().metadata
+                    return metadata
+                case _:
+                    raise Exception("MediaUnit::get_tmdb_metadata()::错误的媒体类型！")
+        except Exception as e:
+            print("MediaUnit::get_tmdb_metadata()::遇到错误:", e)
+            return None
         
 
 # ============================== #
@@ -284,20 +304,27 @@ class TmdbTvSeriesDetails(models.Model):
         """创建或更新一个Series的元数据。"""
         try:
             # 如果能找到本地的元数据，则尝试更新。
-            obj = TmdbTvSeriesDetails.objects.filter(series_id=series_id)
-            if obj.exists():
-                obj.update(AUTH, tolerate_time)
-                return obj.first()
-            else:
-                # 否则,创建新的元数据节点并保存。
-                new = TmdbTvSeriesDetails(series_id=series_id)
-                new.save()
-                new.update(AUTH, tolerate_time)
-                return new
+            obj = TmdbTvSeriesDetails.objects.get(series_id=series_id)                
+            obj.update(AUTH, tolerate_time)
+            print("找到了本地的元数据节点，尝试更新。")
+            return obj
+        except TmdbTvSeriesDetails.DoesNotExist:  # 本地没有元数据，创建之
+            print("创建新的元数据节点并保存。")
+            new = TmdbTvSeriesDetails(series_id=series_id)
+            new.save()
+            new.update(AUTH, tolerate_time)
+            return new
+
+            # else:
+            #     # 否则,创建新的元数据节点并保存。
+            #     new = TmdbTvSeriesDetails(series_id=series_id)
+            #     new.save()
+            #     new.update(AUTH, tolerate_time)
+            #     return new
 
         except Exception as e:
-            print("create_or_update()::遇到了错误: ", e)
-
+            print("TmdbTvSeriesDetails::create_or_update()::遇到了错误: ", e)
+            return None
         # try:
         #     existed = TmdbTvSeriesDetails.objects.get(series_id=series_id)
         #     existed.update(AUTH, tolerate_time)  # 尝试更新
@@ -603,11 +630,12 @@ class MediaFileRef(models.Model):
     episode = models.IntegerField(null=True, blank=True)
 
 
-    # 关联到TMDB的元数据。关联到TmdbMovieDetails或者TmdbTvEpisodeDetails.
-    # 因为每个文件一定只对应一个Episode（且一定不可能对应Series或者Season），所以这里不需要关联到TmdbTvSeriesDetails。
-    # 这是可选项。
-    tmdb_tv_metadata = models.ForeignKey(to="TmdbTvEpisodeDetails", on_delete=models.CASCADE, null=True, blank=True)
-    tmdb_movie_metadata = models.ForeignKey(to="TmdbMovieDetails", on_delete=models.CASCADE, null=True, blank=True)
+    def get_tmdb_metadata(self):
+        try:
+            return self.unit.get_tmdb_metadata()
+        except Exception as e:
+            print("MediaFileRef::get_tmdb_metadata()::遇到错误:", e)
+            return None
 
     class Meta:
         verbose_name = "Media File Ref"
@@ -640,7 +668,7 @@ class FSNode(models.Model):
     meta_last_created_time = models.DateTimeField(null=True, blank=True, auto_now_add=True)
 
     class Meta:
-        verbose_name = "文件节点"
+        verbose_name = "FSNode 文件节点"
         verbose_name_plural = verbose_name
 
     def save(self, *args, **kwargs):
@@ -650,7 +678,7 @@ class FSNode(models.Model):
         print("保存了节点:", self.path)
 
     def __str__(self):
-        return str(self.path)
+        return f"[FSNode {strlib.truncate_middle(self.get_basename(), 20,20)}]"
 
     def get_basename(self) -> str:
         """获取路径的文件的basename.例如, /home/user/sth.txt -> sth.txt."""

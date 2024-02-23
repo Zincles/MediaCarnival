@@ -92,12 +92,12 @@ class MediaLibraryAdmin(admin.ModelAdmin):
 class MediaUnitAdmin(admin.ModelAdmin):
     list_display = [
         "id",
+        "nickname",
         "get_basename",
         "unit_type",
         "tmdb_id",
         "library",
         "fsnode",
-        "nickname",
         "_get_tmdb_metadata_status",
     ]
     list_display_links = ["get_basename", "fsnode"]
@@ -110,7 +110,7 @@ class MediaUnitAdmin(admin.ModelAdmin):
         else:
             return "未获取"
 
-    @admin.action(description="根据文件夹名称，查询TMDB ID")
+    @admin.action(description="根据文件夹名称（或者指定的queyrname）,查询TMDB ID")
     def _update_tmdb_id_by_basename(modeladmin, request, queryset):
         for i in queryset:
             try:
@@ -165,7 +165,13 @@ class MediaUnitAdmin(admin.ModelAdmin):
             except Exception as e:
                 messages.error(request, f"节点 {i} 更新MediaFileRef的季号/集号失败。原因：{e}")
 
-    actions = [_update_tmdb_id_by_basename, _show_media_files, _attach_tmdb_metadata_by_id, _update_media_file_refs, _match_ref_season_episode_by_basename]
+    actions = [
+        _update_tmdb_id_by_basename,
+        _show_media_files,
+        _attach_tmdb_metadata_by_id,
+        _update_media_file_refs,
+        _match_ref_season_episode_by_basename,
+    ]
 
 
 class MediaFileRefAdmin(admin.ModelAdmin):
