@@ -1,6 +1,6 @@
 <template>
     <div class="bg-green q-pa-md">
-        <div v-if="mode === 'browser'">
+        <!-- <div v-if="mode === 'browser'">
             <div>Libraries: {{ librariesResponse }}</div>
             <div>Content: {{ libraryContentResponses }}</div>
             <div>Units: {{ mediaUnitResponses }}</div>
@@ -10,7 +10,7 @@
         <div v-if="mode === 'inspector'">
             <div>metadata:{{ mediaUnitTmdbTvSeriesMetadata }}</div>
             <div>episodeTmdbMetadatas:{{ episodeTmdbMetadatas }}</div>
-        </div>
+        </div> -->
         <q-btn @click="switchMode" label="切换模式" />
         <q-btn @click="updateLibraries" label="刷新" />
     </div>
@@ -18,36 +18,67 @@
     <!-- Browser模式，展示媒体库列表 -->
     <div v-if="mode === 'browser'" class="text-white">
         <q-list bordered separator v-for="library in librariesResponse?.libraries" :key="library.id">
-            <div class="text-h6 text-white">ID:{{ library.id }}, NAME:{{ library.library_name }}</div>
-
-            <!-- 将属于某个库的媒体，展示到库里 -->
-            <div v-for="unit_response in mediaUnitResponses" :key="unit_response.id">
-                <!-- 媒体Ref条目 -->
-                <div v-if="unit_response.library === library.id">
-                    {{ unit_response }}
-                    <q-btn @click="enterUnit(unit_response.id)" label="进入" />
-                </div>
-            </div>
+            <!-- 媒体库 -->
+            <q-item-section horizontal>
+                <div class="text-h5 text-white q-pa-sm">{{ library.library_name }}</div>
+                <q-item>
+                    <!-- 将属于某个库的媒体，展示到库里 -->
+                    <div class="" v-for="unit_response in mediaUnitResponses" :key="unit_response.id">
+                        <!-- 媒体Ref条目 -->
+                        <q-card
+                            class="q-ma-sm"
+                            no-shadow
+                            style="width: 150px; height: 240px; background-color: rgba(255, 255, 255, 0)"
+                            @click="enterUnit(unit_response.id)"
+                            v-if="unit_response.library === library.id"
+                        >
+                            <q-img class="bg-white q-pa-lg" style="height: 200px" />
+                            <div class="text-center">
+                                {{ unit_response.nickname }}
+                            </div>
+                        </q-card>
+                    </div>
+                </q-item>
+            </q-item-section>
         </q-list>
     </div>
 
     <!-- Inspector模式，展示单元的详细信息 -->
     <div v-if="mode === 'inspector'" class="text-white q-ma-md">
         <q-card class="bg-grey-9 q-ma-lg q-pa-lg">
-            <div class="text-h5">{{ mediaUnitTmdbTvSeriesMetadata?.name }}</div>
-            {{ mediaUnitTmdbTvSeriesMetadata?.overview }}<br />
-            发行日期：{{ mediaUnitTmdbTvSeriesMetadata?.first_air_date }}<br />
-            语言：{{ mediaUnitTmdbTvSeriesMetadata?.original_language }}<br />
-            评分：{{ mediaUnitTmdbTvSeriesMetadata?.vote_average }}<br />
-            评分人数：{{ mediaUnitTmdbTvSeriesMetadata?.vote_count }}<br />
-            总集数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_episodes }}<br />
-            总季数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_seasons }}<br />
-        </q-card>
+            <q-card-section horizontal>
+                <q-card-section>
+                    <q-img style="height: 450px; width: 300px" class="bg-white q-ma-lg q-pa-lg" />
+                </q-card-section>
 
+                <q-card-section>
+                    <q-item-label>
+                        <div class="text-h4 q-pa-lg">{{ mediaUnitTmdbTvSeriesMetadata?.name }}</div>
+                        <div class="q-pa-md">{{ mediaUnitTmdbTvSeriesMetadata?.overview }}</div>
+                        <div>⭐评分：{{ mediaUnitTmdbTvSeriesMetadata?.vote_average }}</div>
+
+                        📅发行日期：{{ mediaUnitTmdbTvSeriesMetadata?.first_air_date }}<br />
+                        🏷️语言：{{ mediaUnitTmdbTvSeriesMetadata?.original_language }}<br />
+                        评分人数：{{ mediaUnitTmdbTvSeriesMetadata?.vote_count }}<br />
+                        总集数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_episodes }}<br />
+                        总季数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_seasons }}<br />
+                    </q-item-label>
+                    <div class="q-pa-md">
+                        <!-- 彩色标签 -->
+                        <q-chip
+                            rounded
+                            v-for="genre in mediaUnitTmdbTvSeriesMetadata?.genres"
+                            :key="genre.id"
+                            :label="genre.name"
+                        />
+                    </div>
+                </q-card-section>
+            </q-card-section>
+        </q-card>
         <q-list v-for="media_file_ref in curUnit?.media_file_refs" :key="media_file_ref.id">
             <q-item>
-                <q-card class="row bg-grey-9" flat bordered>
-                    <q-card-section horizontal>
+                <q-card class="row bg-grey-9 col-grow" flat bordered>
+                    <q-card-section horizontal class="col-grow">
                         <!-- 图像 -->
                         <q-card-section class="">
                             <q-img class="bg-white" style="height: 120px; width: 200px" />
