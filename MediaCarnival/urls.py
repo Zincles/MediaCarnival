@@ -12,7 +12,10 @@ urlpatterns = [
     path(route="api/get_media_libraries", view=apis.get_media_libraries),
     path(route="api/get_media_library_content_by_id", view=apis.get_media_library_content_by_id),
     path(route="api/get_media_unit_by_id", view=apis.get_media_unit_by_id),
-    # path(route="api/get_tmdb_metadata_by_mediafile_ref", view=apis.get_tmdb_metadata_by_mediafile_ref),
+    
+    path(route="api/get_tmdb_episode_metadata_by_mediafile_ref", view=apis.get_tmdb_episode_metadata_by_mediafile_ref),
+    path(route="api/get_tmdb_tv_series_metadata_by_unit", view=apis.get_tmdb_tv_series_metadata_by_unit),
+    path(route="api/get_tmdb_tv_episode_metadata_by_unit", view=apis.get_tmdb_tv_episode_metadata_by_unit),
     
     path(route="", view=admin.site.urls),
 ]

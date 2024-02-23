@@ -204,3 +204,40 @@ def get_tmdb_episode_metadata_by_mediafile_ref(request):
 
     # ref = MediaFileRef.objects.get(id=ref_id)
     # return HttpResponse(json.dumps(ref.get_tmdb_metadata()))
+
+def get_tmdb_tv_episode_metadata_by_unit(request):
+    """根据MediaUnit的ID，获取TMDB元数据。返回JSON格式。"""
+    unit_id = int(request.GET.get("unit_id", -1))
+    season = int(request.GET.get("season", -1))
+    episode = int(request.GET.get("episode", -1))
+
+    print(f"get_tmdb_tv_episode_metadata_by_unit::尝试访问Unit[{unit_id}], S{season}E{episode}")
+
+    try:
+        unit = MediaUnit.objects.get(id=unit_id)
+        metadata = unit.get_tmdb_episode_metadata(season, episode)
+        if metadata:
+            return HttpResponse(json.dumps(metadata))
+        else:
+            return HttpResponse(f"No metadata found at {unit_id}.")
+    except Exception as e:
+        print(f"get_tmdb_tv_episode_metadata_by_unit::错误!: 尝试访问Unit[{unit_id}] S{season}E{episode} , {e}")
+        return HttpResponse(f"get_tmdb_tv_episode_metadata_by_unit::错误!: 尝试访问Unit[{unit_id}] S{season}E{episode}, {e}")
+
+
+
+def get_tmdb_tv_series_metadata_by_unit(request):
+    """根据MediaUnit的ID，获取TMDB元数据。返回JSON格式。"""
+    unit_id = int(request.GET.get("unit_id", -1))
+    try:
+        unit = MediaUnit.objects.get(id=unit_id)
+        metadata = unit.get_tmdb_metadata()
+        if metadata:
+            return HttpResponse(json.dumps(metadata))
+        else:
+            return HttpResponse(f"No metadata found at {unit_id}.")
+    except Exception as e:
+        print(f"get_tmdb_tv_series_metadata_by_unit::错误!: 尝试访问Unit[{unit_id}], {e}")
+        return HttpResponse(f"get_tmdb_tv_series_metadata_by_unit::错误!: 尝试访问Unit[{unit_id}], {e}")
+
+

@@ -264,6 +264,12 @@ class MediaUnit(models.Model):
             print("MediaUnit::get_tmdb_metadata()::遇到错误:", e)
             return None
         
+    def get_tmdb_episode_metadata(self, season:int, episode:int):
+        """获取该Unit下的某个Episode的TMDB元数据。"""
+        tmdb_season = TmdbTvSeasonDetails.objects.get(series_id=self.tmdb_id, season_number=season)
+        tmdb_episode = TmdbTvEpisodeDetails.objects.get(series_id=self.tmdb_id, season_number=season, episode_number=episode)
+        return tmdb_episode.metadata
+
 
 # ============================== #
 #                                #

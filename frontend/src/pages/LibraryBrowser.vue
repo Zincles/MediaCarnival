@@ -1,10 +1,16 @@
 <template>
     <div class="bg-green q-pa-md">
-        <div>Libraries: {{ librariesResponse }}</div>
-        <div>Content: {{ libraryContentResponses }}</div>
-        <div>Units: {{ mediaUnitResponses }}</div>
-        <div>Mode: {{ mode }}</div>
-        <div>CurUnit: {{ curUnit }}</div>
+        <div v-if="mode === 'browser'">
+            <div>Libraries: {{ librariesResponse }}</div>
+            <div>Content: {{ libraryContentResponses }}</div>
+            <div>Units: {{ mediaUnitResponses }}</div>
+            <div>Mode: {{ mode }}</div>
+            <div>CurUnit: {{ curUnit }}</div>
+        </div>
+        <div v-if="mode === 'inspector'">
+            <div>metadata:{{ mediaUnitTmdbTvSeriesMetadata }}</div>
+            <div>episodeTmdbMetadatas:{{ episodeTmdbMetadatas }}</div>
+        </div>
         <q-btn @click="switchMode" label="切换模式" />
         <q-btn @click="updateLibraries" label="刷新" />
     </div>
@@ -16,6 +22,7 @@
 
             <!-- 将属于某个库的媒体，展示到库里 -->
             <div v-for="unit_response in mediaUnitResponses" :key="unit_response.id">
+                <!-- 媒体Ref条目 -->
                 <div v-if="unit_response.library === library.id">
                     {{ unit_response }}
                     <q-btn @click="enterUnit(unit_response.id)" label="进入" />
@@ -25,18 +32,43 @@
     </div>
 
     <!-- Inspector模式，展示单元的详细信息 -->
-    <div v-if="mode === 'inspector'" class="text-white">
-        你正在试图访问 [Unit={{ curUnit?.id }}] 的详细信息。
+    <div v-if="mode === 'inspector'" class="text-white q-ma-md">
+        <q-card class="bg-grey-9 q-ma-lg q-pa-lg">
+            <div class="text-h5">{{ mediaUnitTmdbTvSeriesMetadata?.name }}</div>
+            {{ mediaUnitTmdbTvSeriesMetadata?.overview }}<br />
+            发行日期：{{ mediaUnitTmdbTvSeriesMetadata?.first_air_date }}<br />
+            语言：{{ mediaUnitTmdbTvSeriesMetadata?.original_language }}<br />
+            评分：{{ mediaUnitTmdbTvSeriesMetadata?.vote_average }}<br />
+            评分人数：{{ mediaUnitTmdbTvSeriesMetadata?.vote_count }}<br />
+            总集数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_episodes }}<br />
+            总季数：{{ mediaUnitTmdbTvSeriesMetadata?.number_of_seasons }}<br />
+        </q-card>
 
-        {{ curUnit?.id }}
-        {{ curUnit?.media_file_refs }}
-        <div v-for="media_file_ref in curUnit?.media_file_refs" :key="media_file_ref.id">
-            <div>
-                ID:{{ media_file_ref.id }}<br />
-                DESC:{{ media_file_ref.description }}<br />
-                UNIT:{{ media_file_ref.unit }}<br />
-            </div>
-        </div>
+        <q-list v-for="media_file_ref in curUnit?.media_file_refs" :key="media_file_ref.id">
+            <q-item>
+                <q-card class="row bg-grey-9" flat bordered>
+                    <q-card-section horizontal>
+                        <!-- 图像 -->
+                        <q-card-section class="">
+                            <q-img class="bg-white" style="height: 120px; width: 200px" />
+                        </q-card-section>
+
+                        <!-- 文字描述 -->
+                        <q-card-section class="">
+                            <!-- 标题 -->
+                            <q-item-label class="text-lg">{{
+                                getEpisodeDisplayTitle(media_file_ref.season, media_file_ref.episode)
+                            }}</q-item-label>
+
+                            <!-- 描述 -->
+                            <q-item-label class="text-grey-6">{{
+                                findEpisodeMetadata(media_file_ref.season, media_file_ref.episode)?.overview
+                            }}</q-item-label>
+                        </q-card-section>
+                    </q-card-section>
+                </q-card>
+            </q-item>
+        </q-list>
 
         <q-btn @click="exitUnit" label="返回" />
     </div>
@@ -45,7 +77,15 @@
 <script setup lang="ts">
 import axios from 'axios';
 import apiUrls from 'src/apiUrls';
-import { GetLibraryContentResponse, GetMediaLibraryResponse, MediaUnit } from 'src/components/models';
+import apiMethods from 'src/apiMethods';
+
+import {
+    GetLibraryContentResponse,
+    GetMediaLibraryResponse,
+    MediaUnit,
+    TmdbTvEpisodeMetadata,
+    TmdbTvSeriesMetadata,
+} from 'src/components/models';
 
 import { ref } from 'vue';
 
@@ -56,6 +96,9 @@ const librariesResponse = ref<GetMediaLibraryResponse | null>();
 const libraryContentResponses = ref<GetLibraryContentResponse[] | null>();
 const mediaUnitResponses = ref<MediaUnit[] | null>();
 
+const mediaUnitTmdbTvSeriesMetadata = ref<TmdbTvSeriesMetadata | null>();
+const episodeTmdbMetadatas = ref<TmdbTvEpisodeMetadata[] | null>(); // 用于存储每个episode的元数据
+
 function switchMode() {
     if (mode.value === 'browser') {
         mode.value = 'inspector';
@@ -64,10 +107,72 @@ function switchMode() {
     }
 }
 
+// GUI元件。根据season和episode，获取显示的标题
+function getEpisodeDisplayTitle(season: number | null, episode: number | null): string {
+    if (season === null || episode === null) return 'Unknown Episode';
+
+    let episode_meta = findEpisodeMetadata(season, episode);
+    if (episode_meta === null) return `S${season}E${episode}`;
+    else return `S${season}E${episode}: ${episode_meta.name}`;
+}
+
+// 根据season和episode，获取episode的元数据
+function findEpisodeMetadata(season: number | null, episode: number | null): TmdbTvEpisodeMetadata | null {
+    // 如果season 或者 episode是null，就返回null
+    if (season === null || episode === null) return null;
+
+    let data = episodeTmdbMetadatas.value?.find(
+        (metadata) => metadata.season_number === season && metadata.episode_number === episode,
+    );
+    if (data === undefined) return null;
+    else return data;
+}
+
+// 根据已有curUnit以及media_file_refs，更新episodeTmdbMetadatas
+function updateEpisodeTmdbMetadatas() {
+    episodeTmdbMetadatas.value = [];
+
+    if (curUnit.value === null) return;
+
+    let media_file_refs = curUnit.value?.media_file_refs;
+    if (media_file_refs === null) return;
+
+    media_file_refs?.forEach(async (media_file_ref) => {
+        let metadata = await apiMethods.getTmdbTvEpisodeMetadata(
+            media_file_ref.unit,
+            media_file_ref.season ?? undefined,
+            media_file_ref.episode ?? undefined,
+        );
+        episodeTmdbMetadatas.value?.push(metadata);
+    });
+}
+
 // 当点击了某个媒体Unit, 就切换模式并进入它的详细信息。
-function enterUnit(unit_id: number) {
+async function enterUnit(unit_id: number) {
     mode.value = 'inspector';
     curUnit.value = mediaUnitResponses.value?.find((unit) => unit.id === unit_id) || null;
+
+    let metadata = await apiMethods.getTmdbTvSeriesMetadata(curUnit.value?.id);
+    mediaUnitTmdbTvSeriesMetadata.value = metadata;
+    updateEpisodeTmdbMetadatas();
+
+    // 对episode metadatas排序
+    episodeTmdbMetadatas.value?.sort((a, b) => {
+        if (a.season_number === b.season_number) {
+            return a.episode_number - b.episode_number;
+        } else {
+            return a.season_number - b.season_number;
+        }
+    });
+
+    // 对curUnit内的media_file_refs排序
+    curUnit.value?.media_file_refs.sort((a, b) => {
+        if (a.season === b.season) {
+            return (a.episode ?? 0) - (b.episode ?? 0);
+        } else {
+            return (a.season ?? 0) - (b.season ?? 0);
+        }
+    });
 }
 
 // 退出单元模式
